@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Structured logging to console for container environments -->
+<Configuration status="WARN">
+  <Properties>
+    <Property name="logAppender">${sys:log.appender:-Console}</Property>
+  </Properties>
+  <Appenders>
+    <!-- Default human-readable text layout -->
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{ISO8601} %-5level [%t] %c - %msg%n"/>
+    </Console>
+
+    <!-- Lightweight, zero-dependency structured JSON layout -->
+    <Console name="ConsoleJson" target="SYSTEM_OUT">
+      <PatternLayout
+        pattern='{"time":"%d{yyyy-MM-dd&apos;T&apos;HH:mm:ss.SSSZZ}","level":"%level","thread":"%t","logger":"%c","message":"%enc{%msg}{JSON}"}%n'/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <!-- Switch from Console to ConsoleJson for structured JSON output -->
+      <AppenderRef ref="${logAppender}"/>
+    </Root>
+  </Loggers>
+</Configuration>

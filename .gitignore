@@ -1,0 +1,24 @@
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env file
+.env
+.env.build
+
+# Build / Local
+.local/
+target/
+build/
+dist/
+.env.run
+
+# Certificates
+certs/zscaler.crt

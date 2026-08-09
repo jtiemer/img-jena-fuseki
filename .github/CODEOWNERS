@@ -1,0 +1,10 @@
+# Global code owners
+*       jtiemer@gmail.com
+
+# Infrastructure & Core configurations
+/Dockerfile        jtiemer@gmail.com
+/entrypoint.sh     jtiemer@gmail.com
+/terraform/        jtiemer@gmail.com
+/config/           jtiemer@gmail.com
+/pipelines/        jtiemer@gmail.com
+/tests/            jtiemer@gmail.com

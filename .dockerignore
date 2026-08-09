@@ -1,0 +1,43 @@
+# Build artifacts
+.local/
+target/
+build/
+dist/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Git
+.git/
+.gitignore
+.env.build
+
+# Testing & Pipelines
+tests/
+pipelines/
+
+# Documentation & Metadata
+docs/
+README.md
+ROADMAP.md
+CHANGELOG.md
+LICENSE
+CONTRIBUTING.md
+.github/
+.pre-commit-config.yaml
+.cz.toml
+.editorconfig
+
+# Terraform
+terraform/
+
+# Uncommitted Certificates
+certs/zscaler.crt

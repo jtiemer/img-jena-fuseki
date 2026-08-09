@@ -1,0 +1,78 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-xml
+      - id: check-executables-have-shebangs
+
+  - repo: https://github.com/efrecon/pre-commit-hook-branch-check
+    rev: v0.3.0
+    hooks:
+      - id: branch-check
+        args:
+          - --allow=^((feat|bugfix|chore|refactor|docs|style|perf|test|ci|build)/.+|dev|main)$
+
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.10.0
+    hooks:
+      - id: shellcheck
+        files: \.(sh|bash)$
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.9.0-1
+    hooks:
+      - id: shfmt
+        args: [ "-i", "2", "-ci" ]
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.1
+    hooks:
+      - id: terraform_fmt
+
+  - repo: https://github.com/aquasecurity/tfsec
+    rev: v1.28.1
+    hooks:
+      - id: tfsec
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # Trivy is executed as a local system hook to use the local binary and avoid missing pre-commit manifests.
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.27.0
+    hooks:
+      - id: commitizen
+        stages: [ commit-msg ]
+
+  - repo: local
+    hooks:
+      - id: local-smoke-test
+        name: Run Smoke Tests (Non-blocking)
+        entry: bash -c "tests/smoke_test.sh || true"
+        language: system
+        files: (\.(sh|ttl|ini|xml|tf|yaml)|Dockerfile)$
+        pass_filenames: false
+
+      - id: local-integration-test
+        name: Run Integration Tests (Non-blocking)
+        entry: bash -c "tests/integration_test.sh || true"
+        language: system
+        files: (\.(sh|ttl|ini|xml|tf|yaml)|Dockerfile)$
+        pass_filenames: false
+
+      - id: local-trivy-config
+        name: Run Trivy Config Scan (Blocking)
+        entry: trivy config .
+        language: system
+        files: (\.(yaml|yml|tf|ttl|ini|xml)|Dockerfile)$
+        pass_filenames: false

@@ -1,0 +1,155 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  test-gate:
+    name: Test and Validate Gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Commitizen & Pre-commit
+        run: |
+          pip install commitizen pre-commit
+
+      - name: Run Pre-commit Checks (Syntax & Linters)
+        run: |
+          pre-commit run --all-files
+
+      - name: Run Smoke Tests (Blocking)
+        run: |
+          bash tests/smoke_test.sh
+
+      - name: Build Image
+        run: |
+          # Build the image using the build script
+          bash scripts/build-image.sh
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'fuseki:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Integration Tests (Blocking)
+        run: |
+          # Run the integration tests
+          bash tests/integration_test.sh
+  dev-release:
+    name: Dev Release and Bump
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Commitizen
+        run: |
+          pip install commitizen
+
+      - name: Configure Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump Version and Update Changelog
+        run: |
+          # Bump the version using Commitizen.
+          # If no bump is detected from commit messages, force a PATCH bump.
+          cz bump --yes --no-tag || cz bump --yes --no-tag --increment PATCH
+
+      - name: Get Version and Short SHA
+        id: vars
+        run: |
+          VERSION=$(cz version --project)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Tag and Push Changes
+        run: |
+          # Push the version bump commit back to dev
+          git push origin dev
+
+          # Create and push the custom dev tag: v<version>-<short-sha>
+          TAG_NAME="v${{ steps.vars.outputs.version }}-${{ steps.vars.outputs.sha }}"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+
+      - name: Build Dev Image
+        run: |
+          # Build the image; build-image.sh will automatically resolve the tag to: <version>-dev
+          bash scripts/build-image.sh
+
+  main-release:
+    name: Main Release and Tag
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Commitizen
+        run: |
+          pip install commitizen
+
+      - name: Get Release Version
+        id: vars
+        run: |
+          VERSION=$(cz version --project)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Tag and Push Release
+        run: |
+          TAG_NAME="v${{ steps.vars.outputs.version }}"
+          # Only tag if the tag doesn't already exist on main
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          else
+            echo "Tag $TAG_NAME already exists, skipping."
+          fi
+
+      - name: Build Production Image
+        run: |
+          # Build the image; build-image.sh will automatically resolve the tag to: <version>
+          bash scripts/build-image.sh
