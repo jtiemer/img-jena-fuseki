@@ -12,6 +12,7 @@ Current and future feature status of the image.
 |                     | Env vars & configuration        | PARTIAL | -        |
 | **RDF & Search**    | TDB2 + Lucene indexing          | DONE    | -        |
 |                     | Multi-dataset support           | PARTIAL | -        |
+|                     | Bulk loader & offline CLI tools | TODO    | HIGH     |
 |                     | Graph-level ACLs                | TODO    | MAYBE    |
 | **Auth & Security** | HTTP Basic + Shiro              | DONE    | -        |
 |                     | Hashed passwords                | DONE    | -        |
@@ -86,9 +87,12 @@ Current and future feature status of the image.
   not per dataset.
 
 #### TODO: Graph-level access control (Priority: MAYBE)
-
 - **Gaps**: Shiro configuration restricts access at URL/endpoint level, not per-graph.
 - **Future**: Investigate custom Shiro filters or Jena access control mechanisms.
+
+#### TODO: Bulk loading & offline CLI tools (Priority: HIGH)
+- **Gaps**: The container image only bundles the `apache-jena-fuseki` package, which lacks the standalone Apache Jena command-line tools (such as `tdb2.tdbloader`, `tdb2.xloader`, `tdb2.tdbcompact`, and `tdb2.tdbdump`). This makes offline database compaction, high-performance bulk loading of large graphs, and command-line scripting impossible inside the container.
+- **Approach**: Modify the `Dockerfile` builder stage to download and unpack the core `apache-jena` binary tools archive, copying the CLI scripts into the runtime path and registering their required Java dependency libraries in the JVM classpath.
 
 ---
 

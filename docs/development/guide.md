@@ -29,7 +29,7 @@ CA certificates, and tags the image:
 
 - `main` branch: `<version>`
 - `dev` branch: `<version>-dev`
-- Feature branches: `<version>-<branch-name>-<commit-sha>`
+- Feature/maintenance branches: `<version>-<prefix>-<commit-sha>` (e.g., `0.0.1-chore-369b880`)
 
 ### Run Image
 

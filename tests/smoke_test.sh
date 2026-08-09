@@ -15,6 +15,7 @@ required_files=(
   "$DB_DIR/config/shiro.ini"
   "$DB_DIR/config/log4j2.xml"
   "$DB_DIR/scripts/build-image.sh"
+  "$DB_DIR/scripts/upgrade-container.sh"
   "$DB_DIR/scripts/run-local.sh"
   "$DB_DIR/pipelines/backup.sh"
   "$DB_DIR/pipelines/restore.sh"
@@ -40,6 +41,7 @@ for f in "${required_files[@]}"; do
 done
 
 bash -n "$DB_DIR/scripts/build-image.sh"
+bash -n "$DB_DIR/scripts/upgrade-container.sh"
 bash -n "$DB_DIR/scripts/run-local.sh"
 bash -n "$DB_DIR/pipelines/backup.sh"
 bash -n "$DB_DIR/pipelines/restore.sh"
