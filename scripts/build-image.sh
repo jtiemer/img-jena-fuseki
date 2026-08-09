@@ -75,16 +75,21 @@ if [[ "$IMAGE_TAG" == "dev" ]]; then
   elif [[ "$BRANCH" == "dev" ]]; then
     IMAGE_TAG="${VERSION}-dev"
   else
-    SAFE_BRANCH=$(echo "$BRANCH" | tr '/' '-')
-    IMAGE_TAG="${VERSION}-${SAFE_BRANCH}-${COMMIT_SHA}"
+    # Extract the commitizen prefix (e.g. chore, feat, bugfix) from the branch name
+    PREFIX="${BRANCH%%/*}"
+    IMAGE_TAG="${VERSION}-${PREFIX}-${COMMIT_SHA}"
   fi
 fi
 
 echo "Using container engine: $ENGINE"
 echo "Building image: ${IMAGE_NAME}:${IMAGE_TAG}"
-
 "$ENGINE" build \
   --build-arg "FUSEKI_VERSION=${FUSEKI_VERSION}" \
   -t "${IMAGE_NAME}:${IMAGE_TAG}" \
   -f "$DB_DIR/Dockerfile" \
   "$DB_DIR"
+
+if [[ "$IMAGE_TAG" != "latest" ]]; then
+  echo "Tagging image: ${IMAGE_NAME}:latest"
+  "$ENGINE" tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+fi
