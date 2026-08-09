@@ -60,6 +60,33 @@ jobs:
         run: |
           # Run the integration tests
           bash tests/integration_test.sh
+
+  validate-source-branch:
+    name: Validate Merge Source Branch
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check head branch is allowed to merge into base branch
+        run: |
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+          case "$BASE" in
+            dev)
+              if [[ ! "$HEAD" =~ ^(feat|bugfix|chore|refactor|docs|style|perf|test|ci|build)/.+ ]]; then
+                echo "ERROR: PRs into 'dev' must originate from a feat/bugfix/chore/refactor/docs/style/perf/test/ci/build branch (got '$HEAD')." >&2
+                exit 1
+              fi
+              ;;
+            main)
+              if [[ "$HEAD" != "dev" && ! "$HEAD" =~ ^(fix|bugfix)/.+ ]]; then
+                echo "ERROR: PRs into 'main' must originate from 'dev' or a fix/bugfix branch (got '$HEAD')." >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "Target branch '$BASE' has no source-branch restriction."
+              ;;
+          esac
   dev-release:
     name: Dev Release Tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
