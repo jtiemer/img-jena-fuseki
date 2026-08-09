@@ -70,10 +70,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
 
       - name: Install Commitizen
         run: |
@@ -86,9 +82,12 @@ jobs:
 
       - name: Bump Version and Update Changelog
         run: |
-          # Bump the version using Commitizen.
-          # If no bump is detected from commit messages, force a PATCH bump.
-          cz bump --yes --no-tag || cz bump --yes --no-tag --increment PATCH
+          # Bump the version using Commitizen (files only to avoid tag creation)
+          cz bump --yes --version-files-only || cz bump --yes --version-files-only --increment PATCH
+
+          # Manually commit the version bump and changelog
+          git add .cz.toml CHANGELOG.md
+          git commit -m "bump: version to $(cz version --project) [skip ci]"
 
       - name: Get Version and Short SHA
         id: vars
