@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # Lifecycle management for local dev/test containers of this image.
-# Usage: scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test>
+# Usage: scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test> [tag]
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <create|start|stop|delete|upgrade> <dev|test>" >&2
+  echo "Usage: $0 <create|start|stop|delete|upgrade> <dev|test> [tag]" >&2
   exit 1
 }
 
-[[ $# -eq 2 ]] || usage
+[[ $# -eq 2 || $# -eq 3 ]] || usage
 COMMAND="$1"
 SUFFIX="$2"
+TAG_OVERRIDE="${3:-}"
 
 case "$COMMAND" in
 create | start | stop | delete | upgrade) ;;
@@ -21,6 +22,16 @@ case "$SUFFIX" in
 dev | test) ;;
 *) usage ;;
 esac
+
+if [[ -n "$TAG_OVERRIDE" && "$COMMAND" != "create" && "$COMMAND" != "upgrade" ]]; then
+  echo "ERROR: a tag argument is only valid with 'create' or 'upgrade'" >&2
+  exit 1
+fi
+
+if [[ "$COMMAND" == "upgrade" && "$SUFFIX" == "test" ]]; then
+  echo "ERROR: 'upgrade' only targets the dev container; test containers are short-lived and disposable (use 'create test' instead)" >&2
+  exit 1
+fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -55,7 +66,6 @@ fi
 # Container name is always CONTAINER_NAME + suffix. No other naming is allowed.
 TARGET_NAME="${CONTAINER_NAME}-${SUFFIX}"
 IMAGE_NAME="${IMAGE_NAME:-fuseki}"
-IMAGE_TAG="${IMAGE_TAG:-dev}"
 FUSEKI_PORT="${FUSEKI_PORT:-3030}"
 
 if command -v podman >/dev/null 2>&1; then
@@ -66,6 +76,34 @@ else
   echo "ERROR: neither podman nor docker is available" >&2
   exit 1
 fi
+
+# Resolve the newest local "<version>-dev" tag for IMAGE_NAME (most recently
+# built, not highest version number) to use as the default dev image.
+resolve_latest_dev_tag() {
+  local tag
+  tag=$("$ENGINE" images --format '{{.CreatedAt}}|{{.Tag}}' --filter "reference=${IMAGE_NAME}:*-dev" 2>/dev/null \
+    | sort -r | head -n1 | cut -d'|' -f2)
+  if [[ -z "$tag" ]]; then
+    echo "ERROR: no local image tag matching '${IMAGE_NAME}:*-dev' found. Build one (scripts/build-image.sh) or pass an explicit tag." >&2
+    exit 1
+  fi
+  printf '%s' "$tag"
+}
+
+# Resolve the image tag to use for $1 (dev|test): explicit CLI tag argument >
+# IMAGE_TAG environment override > suffix-based default (test: "latest",
+# dev: newest local "*-dev" tag).
+resolve_tag() {
+  if [[ -n "$TAG_OVERRIDE" ]]; then
+    printf '%s' "$TAG_OVERRIDE"
+  elif [[ -n "${IMAGE_TAG:-}" ]]; then
+    printf '%s' "$IMAGE_TAG"
+  elif [[ "$1" == "test" ]]; then
+    printf 'latest'
+  else
+    resolve_latest_dev_tag
+  fi
+}
 
 # Build the run/create argument array in $ARGS for the target suffix.
 # "dev" mounts persistent data and config volumes from .env.run.
@@ -100,10 +138,12 @@ build_container_args() {
 }
 
 create_container() {
+  local tag
+  tag=$(resolve_tag "$SUFFIX")
   "$ENGINE" rm -f "$TARGET_NAME" >/dev/null 2>&1 || true
-  build_container_args "${IMAGE_NAME}:${IMAGE_TAG}"
+  build_container_args "${IMAGE_NAME}:${tag}"
   "$ENGINE" run -d "${ARGS[@]}"
-  echo "[Manage] Container '$TARGET_NAME' created and started from ${IMAGE_NAME}:${IMAGE_TAG}."
+  echo "[Manage] Container '$TARGET_NAME' created and started from ${IMAGE_NAME}:${tag}."
   echo "[Manage] Health endpoint: http://localhost:${FUSEKI_PORT}/\$/ping"
 }
 
@@ -122,18 +162,21 @@ delete_container() {
   echo "[Manage] Container '$TARGET_NAME' deleted (volumes untouched)."
 }
 
+# Always targets the dev container; test containers are short-lived and
+# recreated via 'create test' instead of being upgraded in place.
 upgrade_container() {
   if ! "$ENGINE" inspect "$TARGET_NAME" >/dev/null 2>&1; then
     echo "[Manage] Container '$TARGET_NAME' does not exist. Nothing to upgrade."
     return 0
   fi
 
-  local state
+  local state tag
   state=$("$ENGINE" inspect --format='{{.State.Running}}' "$TARGET_NAME")
-  echo "[Manage] Upgrading '$TARGET_NAME' (running: $state) to ${IMAGE_NAME}:latest..."
+  tag=$(resolve_tag "dev")
+  echo "[Manage] Upgrading '$TARGET_NAME' (running: $state) to ${IMAGE_NAME}:${tag}..."
 
   "$ENGINE" rm -f "$TARGET_NAME"
-  build_container_args "${IMAGE_NAME}:latest"
+  build_container_args "${IMAGE_NAME}:${tag}"
 
   if [[ "$state" == "true" ]]; then
     "$ENGINE" run -d "${ARGS[@]}"

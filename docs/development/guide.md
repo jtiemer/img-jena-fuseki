@@ -34,14 +34,17 @@ CA certificates, and tags the image:
 
 ### Run Image
 
-`scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test>` manages a container named
+`scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test> [tag]` manages a container named
 `${CONTAINER_NAME}-dev` or `${CONTAINER_NAME}-test` (suffix is mandatory, no other naming is allowed):
 
 - `dev`: mounts persistent data (`FUSEKI_DATA_VOLUME`) and a read-only config directory (`FUSEKI_CONFIG_VOLUME`) from
   `.env.run`.
 - `test`: no volumes; runs entirely on defaults baked into the image.
 - Both: read-only root filesystem with `/fuseki/run` and `/tmp` mounted on `tmpfs`.
-- `upgrade`: recreates the container against `<image>:latest`, preserving its prior running/stopped state.
+- `create`/`upgrade` accept an optional `[tag]` argument. Without one: `test` defaults to `latest`; `dev` defaults to
+  the newest local `<image>:*-dev` tag (by build time, not version). `IMAGE_TAG` in the environment overrides both.
+- `upgrade` only targets the dev container (`test` is rejected) and recreates it against the resolved tag, preserving
+  its prior running/stopped state. Test containers are short-lived: recreate them with `create test` instead.
 
 `scripts/prune-images.sh` untags the `dev-custom` build tag and removes dangling (untagged) images left behind by
 repeated local builds.
