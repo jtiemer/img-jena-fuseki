@@ -72,7 +72,7 @@ repos:
 
       - id: local-trivy-config
         name: Run Trivy Config Scan (Blocking)
-        entry: trivy config .
+        entry: 'bash -c "if command -v trivy >/dev/null 2>&1; then trivy config .; else echo WARNING: trivy binary not found on PATH; fi"'
         language: system
         files: (\.(yaml|yml|tf|ttl|ini|xml)|Dockerfile)$
         pass_filenames: false

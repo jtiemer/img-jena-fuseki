@@ -34,6 +34,15 @@ jobs:
         run: |
           pip install commitizen pre-commit
 
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+      - name: Set up Hadolint
+        uses: hadolint/setup-hadolint@v3
+
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@v0.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run Pre-commit Checks (Syntax & Linters)
         run: |
           pre-commit run --all-files
