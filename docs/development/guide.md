@@ -14,7 +14,8 @@ Guidelines for codebase development and contributions.
 ## Project Structure
 
 - `config/`: Default database (`config.ttl`), authentication (`shiro.ini`), and logging (`log4j2.xml`) setups.
-- `scripts/`: Local scripts to build (`build-image.sh`) and run (`run-local.sh`) the container.
+- `scripts/`: Local scripts to build (`build-image.sh`), manage dev/test containers (`manage-container.sh`), and prune
+  stale local images (`prune-images.sh`).
 - `pipelines/`: Scripts to backup and restore databases (`backup.sh`, `restore.sh`).
 - `tests/`: Smoke syntax tests (`smoke_test.sh`) and container integration tests (`integration_test.sh`).
 - `terraform/`: Scaffolding to deploy resource groups.
@@ -33,12 +34,17 @@ CA certificates, and tags the image:
 
 ### Run Image
 
-`scripts/run-local.sh` runs the container with:
+`scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test>` manages a container named
+`${CONTAINER_NAME}-dev` or `${CONTAINER_NAME}-test` (suffix is mandatory, no other naming is allowed):
 
-- Named volume persistence (`fuseki-data-dev`).
-- Read-only root filesystem with `/fuseki/run` and `/tmp` mounted on `tmpfs`.
-- Configuration overrides via env variables (`FUSEKI_CONFIG_FILE`, `FUSEKI_SHIRO_FILE`, `FUSEKI_LOG4J2_FILE`) mounted as
-  individual file targets inside `/fuseki/config/`.
+- `dev`: mounts persistent data (`FUSEKI_DATA_VOLUME`) and a read-only config directory (`FUSEKI_CONFIG_VOLUME`) from
+  `.env.run`.
+- `test`: no volumes; runs entirely on defaults baked into the image.
+- Both: read-only root filesystem with `/fuseki/run` and `/tmp` mounted on `tmpfs`.
+- `upgrade`: recreates the container against `<image>:latest`, preserving its prior running/stopped state.
+
+`scripts/prune-images.sh` untags the `dev-custom` build tag and removes dangling (untagged) images left behind by
+repeated local builds.
 
 ### Testing
 

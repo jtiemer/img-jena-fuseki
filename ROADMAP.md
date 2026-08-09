@@ -9,10 +9,12 @@ Current and future feature status of the image.
 | **Build & Runtime** | Dynamic Fuseki version          | DONE    | -        |
 |                     | Container health checks         | DONE    | -        |
 |                     | Named volume persistence        | DONE    | -        |
+|                     | Dev/test container lifecycle    | DONE    | -        |
+|                     | Stale local image pruning       | DONE    | -        |
 |                     | Env vars & configuration        | PARTIAL | -        |
 | **RDF & Search**    | TDB2 + Lucene indexing          | DONE    | -        |
 |                     | Multi-dataset support           | PARTIAL | -        |
-|                     | Bulk loader & offline CLI tools | TODO    | HIGH     |
+|                     | Bulk loader & offline CLI tools | DONE    | -        |
 |                     | Graph-level ACLs                | TODO    | MAYBE    |
 | **Auth & Security** | HTTP Basic + Shiro              | DONE    | -        |
 |                     | Hashed passwords                | DONE    | -        |
@@ -58,8 +60,21 @@ Current and future feature status of the image.
 
 #### DONE: Named volume persistence
 
-- `scripts/run-local.sh` mounts persistent data to named volume (default: `fuseki-data-dev`).
+- `scripts/manage-container.sh create dev` mounts persistent data to named volume (default: `fuseki-data-dev`).
 - Avoids host bind-mount filesystem sharing complications across platforms.
+
+#### DONE: Dev/test container lifecycle management
+
+- `scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test>` names containers exclusively as
+  `${CONTAINER_NAME}-dev` or `${CONTAINER_NAME}-test`.
+- `dev` mounts `FUSEKI_DATA_VOLUME` and a read-only `FUSEKI_CONFIG_VOLUME` from `.env.run`; `test` stays ephemeral
+  (no volumes) for disposable, isolated integration runs.
+- `upgrade` recreates the target container against `<image>:latest`, preserving its prior running/stopped state.
+
+#### DONE: Stale local image pruning
+
+- `scripts/prune-images.sh` untags the `dev-custom` build tag and removes dangling (untagged) images left behind by
+  repeated local builds.
 
 #### PARTIAL: Configuration via environment variables
 
@@ -90,9 +105,10 @@ Current and future feature status of the image.
 - **Gaps**: Shiro configuration restricts access at URL/endpoint level, not per-graph.
 - **Future**: Investigate custom Shiro filters or Jena access control mechanisms.
 
-#### TODO: Bulk loading & offline CLI tools (Priority: HIGH)
-- **Gaps**: The container image only bundles the `apache-jena-fuseki` package, which lacks the standalone Apache Jena command-line tools (such as `tdb2.tdbloader`, `tdb2.xloader`, `tdb2.tdbcompact`, and `tdb2.tdbdump`). This makes offline database compaction, high-performance bulk loading of large graphs, and command-line scripting impossible inside the container.
-- **Approach**: Modify the `Dockerfile` builder stage to download and unpack the core `apache-jena` binary tools archive, copying the CLI scripts into the runtime path and registering their required Java dependency libraries in the JVM classpath.
+#### DONE: Bulk loading & offline CLI tools
+- The container bundles the `apache-jena` command-line tools (`tdb2.tdbloader`, `tdb2.xloader`, `tdb2.tdbcompact`,
+  `tdb2.tdbdump`, `tdb2.tdbbackup`, `tdb2.tdbquery`) at `/fuseki/app/jena-cli`, with `JENA_HOME` and `PATH` configured.
+  Version pinned via `JENA_CLI_TOOLS_VERSION` (defaults to `FUSEKI_VERSION`).
 
 ---
 

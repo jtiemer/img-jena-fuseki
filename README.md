@@ -100,7 +100,7 @@ bash scripts/build-image.sh
 Run the image in detached mode on port `3030`:
 
 ```bash
-bash scripts/run-local.sh
+bash scripts/manage-container.sh create dev
 ```
 
 Verify the service is running and healthy:

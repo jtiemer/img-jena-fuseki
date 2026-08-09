@@ -21,7 +21,7 @@ bash scripts/build-image.sh
 ### 3. Start Container Instance
 
 ```bash
-bash scripts/run-local.sh
+bash scripts/manage-container.sh create dev
 ```
 
 ### 4. Verify Service Health
@@ -80,7 +80,7 @@ Expected: JSON containing `http://example.org/item1`.
 Restart the container and query back the triple:
 
 ```bash
-docker restart fuseki
+docker restart fuseki-dev
 curl -fsS -u admin:change-me \
   -H "Accept: application/sparql-results+json" \
   -G "http://localhost:3030/default/query" \
@@ -104,9 +104,9 @@ Expected output: `.local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz`.
 ### Restore local host-bound Data
 
 ```bash
-docker stop fuseki
+bash scripts/manage-container.sh stop dev
 bash pipelines/restore.sh .local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz
-docker start fuseki
+bash scripts/manage-container.sh start dev
 ```
 
 ---
@@ -126,7 +126,7 @@ bash tests/integration_test.sh
 Remove container instance and delete local persistent storage volume:
 
 ```bash
-docker rm -f fuseki
+bash scripts/manage-container.sh delete dev
 docker volume rm fuseki-data-dev
 ```
 
@@ -140,7 +140,7 @@ Identify listener and stop it, or bind to a custom port:
 
 ```bash
 docker ps | grep 3030
-FUSEKI_PORT=3031 bash scripts/run-local.sh
+FUSEKI_PORT=3031 bash scripts/manage-container.sh create dev
 ```
 
 ### Lucene Indexing Failures
@@ -149,7 +149,7 @@ Verify database configuration contains `text:TextDataset`. To run without index,
 environment:
 
 ```bash
-REQUIRE_LUCENE=false bash scripts/run-local.sh
+REQUIRE_LUCENE=false bash scripts/manage-container.sh create dev
 ```
 
 ### Invalid Credentials Override
@@ -157,12 +157,13 @@ REQUIRE_LUCENE=false bash scripts/run-local.sh
 Check target mount file content:
 
 ```bash
-docker exec fuseki cat /fuseki/config/shiro.ini
+docker exec fuseki-dev cat /fuseki/config/shiro.ini
 ```
+
 ### Query Dataset Locally (Offline Verification)
 
 To query the database directly from the CLI inside the container (e.g., for offline diagnostics):
 
 ```bash
-docker exec -it fuseki tdb2.tdbquery --loc=/fuseki/data/default "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
+docker exec -it fuseki-dev tdb2.tdbquery --loc=/fuseki/data/default "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
 ```
