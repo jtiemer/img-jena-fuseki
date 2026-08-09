@@ -23,8 +23,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   syntax (`smoke_test.sh`), configuration security (`trivy config` local hook), container CVE vulnerability scanning
   (`trivy-action` GHA), and integration (`integration_test.sh`).
 - Database backup and restore pipelines (`backup.sh`, `restore.sh`).
-- Technical documentation portal containing architectural overview, developer guide, operations guide, runbook, and
-  roadmap.
+- Technical documentation portal containing architectural overview, developer guide, operations guide, runbook, and roadmap.
+- Automated container upgrade script (`scripts/upgrade-container.sh`) to safely upgrade containers with latest image tags while fully preserving active data volumes, configurations, ports, and states.
+- Integrated the full suite of Apache Jena CLI tools (in `/fuseki/app/jena-cli`) to enable offline database backups, compaction, and high-performance bulk loading.
+- Added environment configuration variable `JENA_CLI_TOOLS_VERSION` with dynamic version resolution defaulting to `FUSEKI_VERSION` inside the build processes.
 
 ## v0.0.2 (2026-08-09)
 
