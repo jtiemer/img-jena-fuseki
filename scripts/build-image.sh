@@ -41,6 +41,7 @@ resolve_latest_fuseki_version() {
 }
 
 FUSEKI_VERSION="${FUSEKI_VERSION:-$(resolve_latest_fuseki_version)}"
+JENA_CLI_TOOLS_VERSION="${JENA_CLI_TOOLS_VERSION:-$FUSEKI_VERSION}"
 
 if command -v podman >/dev/null 2>&1; then
   ENGINE="podman"
@@ -85,6 +86,7 @@ echo "Using container engine: $ENGINE"
 echo "Building image: ${IMAGE_NAME}:${IMAGE_TAG}"
 "$ENGINE" build \
   --build-arg "FUSEKI_VERSION=${FUSEKI_VERSION}" \
+  --build-arg "JENA_CLI_TOOLS_VERSION=${JENA_CLI_TOOLS_VERSION}" \
   -t "${IMAGE_NAME}:${IMAGE_TAG}" \
   -f "$DB_DIR/Dockerfile" \
   "$DB_DIR"
