@@ -159,3 +159,10 @@ Check target mount file content:
 ```bash
 docker exec fuseki cat /fuseki/config/shiro.ini
 ```
+### Query Dataset Locally (Offline Verification)
+
+To query the database directly from the CLI inside the container (e.g., for offline diagnostics):
+
+```bash
+docker exec -it fuseki tdb2.tdbquery --loc=/fuseki/data/default "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
+```

@@ -5,7 +5,7 @@ Design, technology stack, and component integration of the containerized Apache 
 ## Technology Stack
 
 - **Base Image**: Eclipse Temurin 21 JRE Alpine.
-- **Database Engine**: Apache Jena / Fuseki (TDB2 storage layout).
+- **Database Engine**: Apache Jena / Fuseki (TDB2 storage layout) and Apache Jena command-line tools.
 - **Search Engine**: Apache Lucene (integrated via jena-text).
 - **Security**: Apache Shiro (HTTP Basic authentication and RBAC).
 - **Logging**: log4j2 (configured for Console and JSON structured output).
@@ -42,6 +42,7 @@ Exposed on port `3030`:
 | `FUSEKI_RUN`        | Directory for transient runtime state          | `/fuseki/run`                                             |
 | `FUSEKI_HOME`       | Directory containing Fuseki binaries           | `/fuseki/app`                                             |
 | `FUSEKI_BASE`       | Configuration and runtime base directory       | Value of `FUSEKI_RUN`                                     |
+| `JENA_HOME`         | Directory containing Apache Jena CLI tools     | `/fuseki/app/jena-cli`                                    |
 | `REQUIRE_LUCENE`    | Enforces Lucene index configuration on startup | `true`                                                    |
 | `LOGGING`           | JVM logging configuration options              | `-Dlog4j.configurationFile=$FUSEKI_CONFIG_DIR/log4j2.xml` |
 | `JVM_ARGS`          | JVM memory limits and configurations           | `-Xms512m -Xmx1g`                                         |

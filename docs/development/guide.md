@@ -43,8 +43,7 @@ CA certificates, and tags the image:
 ### Testing
 
 - **Smoke Check (`tests/smoke_test.sh`)**: Validates repository file structure and shell syntax.
-- **Integration Check (`tests/integration_test.sh`)**: Starts container, tests health ping, SPARQL Query/Update, Lucene
-  fulltext search, data persistence, and credential override.
+- **Integration Check (`tests/integration_test.sh`)**: Starts container, tests health ping, SPARQL Query/Update, Lucene fulltext search, offline query execution via built-in `tdb2.tdbquery` command-line tools, data persistence, and credential override.
 
 ## Git Pre-Commit Hooks
 

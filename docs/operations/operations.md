@@ -70,6 +70,28 @@ podman start fuseki
 - **Production Overrides**: Mount overrides for config files securely (`config.ttl`, `shiro.ini`, `log4j2.xml`) using
   file-level mounts via environment variables, or mount a directory directly to `/fuseki/config`.
 
+## Apache Jena CLI Tools
+
+The container image includes the full suite of Apache Jena command-line tools (e.g., `tdb2.tdbloader`, `tdb2.tdbcompact`, `tdb2.tdbquery`, `tdb2.tdbbackup`) preconfigured under `JENA_HOME=/fuseki/app/jena-cli` and registered in the system `$PATH`.
+
+### Bulk Loading Datasets
+To load large graphs containing millions of triples with high performance, bypass the HTTP endpoints and run `tdb2.tdbloader` directly inside the container against the persistent TDB2 volume:
+```bash
+podman exec -it -u fuseki fuseki-dev tdb2.tdbloader --loc=/fuseki/data/default /path/to/dataset.nt
+```
+
+### Database Compaction
+Over time, database deletions and writes leave transaction overhead. Run `tdb2.tdbcompact` to compact the TDB2 storage and reclaim disk space:
+```bash
+podman exec -it -u fuseki fuseki-dev tdb2.tdbcompact --loc=/fuseki/data/default
+```
+
+### Transaction-Safe Offline Backup
+Alternatively, to create a consistent, transaction-safe backup dump file natively:
+```bash
+podman exec -it -u fuseki fuseki-dev tdb2.tdbbackup --loc=/fuseki/data/default
+```
+This generates a `.nq.gz` backup file inside the container's TDB2 directory.
 ## Hardening
 
 ### Non-Privileged User
