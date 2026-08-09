@@ -25,3 +25,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Database backup and restore pipelines (`backup.sh`, `restore.sh`).
 - Technical documentation portal containing architectural overview, developer guide, operations guide, runbook, and
   roadmap.
+
+## v0.0.2 (2026-08-09)
+
+## v0.0.1 (2026-08-09)
+
+### Feat
+
+- initial commit of the hardened Apache Jena/Fuseki service image
