@@ -28,6 +28,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Integrated the full suite of Apache Jena CLI tools (in `/fuseki/app/jena-cli`) to enable offline database backups, compaction, and high-performance bulk loading.
 - Added environment configuration variable `JENA_CLI_TOOLS_VERSION` with dynamic version resolution defaulting to `FUSEKI_VERSION` inside the build processes.
 
+## v0.0.5 (2026-08-09)
+
 ## v0.0.4 (2026-08-09)
 
 ### Feat
