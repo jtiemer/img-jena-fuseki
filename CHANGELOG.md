@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v0.0.6 (2026-08-10)
+
+### Feat
+
+- **scripts**: concurrent test container lifecycle, zombie sweeping, and tag resolution
+
 ## v0.0.5 (2026-08-09)
 
 ## v0.0.4 (2026-08-09)
