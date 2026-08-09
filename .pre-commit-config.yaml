@@ -76,3 +76,19 @@ repos:
         language: system
         files: (\.(yaml|yml|tf|ttl|ini|xml)|Dockerfile)$
         pass_filenames: false
+
+      - id: reject-protected-branch-push
+        name: Reject Direct Push to dev/main
+        entry: scripts/hooks/reject-protected-branch-push.sh
+        language: script
+        stages: [ pre-push ]
+        pass_filenames: false
+        always_run: true
+
+      - id: enforce-version-bump
+        name: Enforce Manual Version Bump Before Merge
+        entry: scripts/hooks/enforce-version-bump.sh
+        language: script
+        stages: [ pre-push ]
+        pass_filenames: false
+        always_run: true

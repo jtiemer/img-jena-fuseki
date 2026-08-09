@@ -61,7 +61,7 @@ jobs:
           # Run the integration tests
           bash tests/integration_test.sh
   dev-release:
-    name: Dev Release and Bump
+    name: Dev Release Tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
@@ -70,42 +70,8 @@ jobs:
         with:
           fetch-depth: 0
 
-
-      - name: Install Commitizen
-        run: |
-          pip install commitizen
-
-      - name: Configure Git User
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Bump Version and Update Changelog
-        run: |
-          # Bump the version using Commitizen (files only to avoid tag creation)
-          cz bump --yes --version-files-only || cz bump --yes --version-files-only --increment PATCH
-
-          # Manually commit the version bump and changelog
-          git add .cz.toml CHANGELOG.md
-          git commit -m "bump: version to $(cz version --project) [skip ci]"
-
-      - name: Get Version and Short SHA
-        id: vars
-        run: |
-          VERSION=$(cz version --project)
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-
-      - name: Tag and Push Changes
-        run: |
-          # Push the version bump commit back to dev
-          git push origin dev
-
-          # Create and push the custom dev tag: v<version>-<short-sha>
-          TAG_NAME="v${{ steps.vars.outputs.version }}-${{ steps.vars.outputs.sha }}"
-          git tag "$TAG_NAME"
-          git push origin "$TAG_NAME"
+      - name: Tag Release (if version was bumped)
+        run: bash scripts/tag-release.sh
 
       - name: Build Dev Image
         run: |
@@ -113,7 +79,7 @@ jobs:
           bash scripts/build-image.sh
 
   main-release:
-    name: Main Release and Tag
+    name: Main Release Tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -122,31 +88,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Commitizen
-        run: |
-          pip install commitizen
-
-      - name: Get Release Version
-        id: vars
-        run: |
-          VERSION=$(cz version --project)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Tag and Push Release
-        run: |
-          TAG_NAME="v${{ steps.vars.outputs.version }}"
-          # Only tag if the tag doesn't already exist on main
-          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            git tag "$TAG_NAME"
-            git push origin "$TAG_NAME"
-          else
-            echo "Tag $TAG_NAME already exists, skipping."
-          fi
+      - name: Tag Release (if version was bumped)
+        run: bash scripts/tag-release.sh
 
       - name: Build Production Image
         run: |
