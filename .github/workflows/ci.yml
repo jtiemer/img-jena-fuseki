@@ -36,13 +36,13 @@ jobs:
 
       - name: Set up OpenTofu
         uses: opentofu/setup-opentofu@v1
-      - name: Set up Hadolint
-        uses: hadolint/setup-hadolint@v3
 
-      - name: Set up Trivy
-        uses: aquasecurity/setup-trivy@v0.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Tooling (Hadolint & Trivy)
+        run: |
+          sudo curl -sSfL "https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64" -o /usr/local/bin/hadolint
+          sudo chmod +x /usr/local/bin/hadolint
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
       - name: Run Pre-commit Checks (Syntax & Linters)
         run: |
           pre-commit run --all-files
@@ -50,7 +50,6 @@ jobs:
       - name: Run Smoke Tests (Blocking)
         run: |
           bash tests/smoke_test.sh
-
       - name: Build Image
         run: |
           # Build the image using the build script
