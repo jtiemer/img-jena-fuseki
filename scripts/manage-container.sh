@@ -77,7 +77,6 @@ if [ -f "$ROOT_DIR/.env.run" ]; then
   source "$ROOT_DIR/.env.run"
   set +a
 fi
-
 for var in "${overridable_vars[@]}"; do
   override_name="_override_${var}"
   if [ -n "${!override_name+x}" ]; then
@@ -94,7 +93,9 @@ IMAGE_NAME="${IMAGE_NAME:-fuseki}"
 FUSEKI_PORT="${FUSEKI_PORT:-3030}"
 FUSEKI_ENDPOINT_HEALTH="${FUSEKI_ENDPOINT_HEALTH:-/\$/ping}"
 
-if command -v podman >/dev/null 2>&1; then
+if [[ -n "${ENGINE:-}" ]]; then
+  : # Caller specified ENGINE override
+elif command -v podman >/dev/null 2>&1; then
   ENGINE="podman"
 elif command -v docker >/dev/null 2>&1; then
   ENGINE="docker"

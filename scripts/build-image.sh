@@ -43,7 +43,9 @@ resolve_latest_fuseki_version() {
 FUSEKI_VERSION="${FUSEKI_VERSION:-$(resolve_latest_fuseki_version)}"
 JENA_CLI_TOOLS_VERSION="${JENA_CLI_TOOLS_VERSION:-$FUSEKI_VERSION}"
 
-if command -v podman >/dev/null 2>&1; then
+if [[ -n "${ENGINE:-}" ]]; then
+  : # Caller specified ENGINE override
+elif command -v podman >/dev/null 2>&1; then
   ENGINE="podman"
 elif command -v docker >/dev/null 2>&1; then
   ENGINE="docker"
