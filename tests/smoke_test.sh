@@ -43,14 +43,29 @@ for f in "${required_files[@]}"; do
   [[ -f "$f" ]] || { echo "Missing required file: $f" >&2; exit 1; }
 done
 
-bash -n "$DB_DIR/scripts/build-image.sh"
-bash -n "$DB_DIR/scripts/manage-container.sh"
-bash -n "$DB_DIR/scripts/prune-images.sh"
-bash -n "$DB_DIR/scripts/tag-release.sh"
-bash -n "$DB_DIR/scripts/hooks/reject-protected-branch-push.sh"
-bash -n "$DB_DIR/scripts/hooks/enforce-version-bump.sh"
-bash -n "$DB_DIR/pipelines/backup.sh"
-bash -n "$DB_DIR/pipelines/restore.sh"
+# Collect all shell scripts in the repository for validation
+shell_scripts=(
+  "$DB_DIR/entrypoint.sh"
+  "$DB_DIR/scripts"/*.sh
+  "$DB_DIR/scripts/hooks"/*.sh
+  "$DB_DIR/pipelines"/*.sh
+  "$DB_DIR/tests"/*.sh
+)
+
+for script in "${shell_scripts[@]}"; do
+  [[ -f "$script" ]] || continue
+  bash -n "$script"
+done
+
+if command -v shellcheck >/dev/null 2>&1; then
+  echo "Running ShellCheck on shell scripts..."
+  shellcheck "${shell_scripts[@]}"
+fi
+
+if command -v shfmt >/dev/null 2>&1; then
+  echo "Running shfmt formatting check on shell scripts..."
+  shfmt -d -i 2 -ci "${shell_scripts[@]}"
+fi
 echo "Verifying Maven Central version resolution path..."
 resolved_version=$(curl -fsSL "https://repo1.maven.org/maven2/org/apache/jena/jena-fuseki-server/maven-metadata.xml" \
   | grep -oE '<latest>[^<]+</latest>' \
