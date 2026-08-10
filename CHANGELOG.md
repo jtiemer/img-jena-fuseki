@@ -131,6 +131,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Terraform scaffold for Azure Resource Group.
 - Documentation: architecture overview, development guide, operations guide, runbook, roadmap.
 
+## v0.1.9 (2026-08-10)
+
 ## v0.1.8 (2026-08-10)
 
 ## v0.1.7 (2026-08-10)
