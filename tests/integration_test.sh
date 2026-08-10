@@ -340,7 +340,9 @@ echo "  Testing custom config mount override..."
 OVERRIDE_NAME="${TEST_CONTAINER_NAME}-override"
 OVERRIDE_VOLUME="${TEST_DATA_VOLUME}-override"
 MOCK_CONFIG_DIR="$(mktemp -d)"
+chmod 755 "$MOCK_CONFIG_DIR"
 cp "${ROOT_DIR}/config/config.ttl" "${ROOT_DIR}/config/log4j2.xml" "${MOCK_CONFIG_DIR}/"
+chmod 644 "${MOCK_CONFIG_DIR}"/*
 
 # Custom shiro.ini with a different admin password ('foo').
 cat << 'EOF' > "${MOCK_CONFIG_DIR}/shiro.ini"

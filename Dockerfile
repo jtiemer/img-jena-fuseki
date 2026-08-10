@@ -11,6 +11,7 @@ ENV FUSEKI_HOME=/fuseki/app \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 #hadolint ignore=DL3018
 RUN sed -i 's/https/http/g' /etc/apk/repositories \
+    && apk upgrade --no-cache \
     && apk add --no-cache curl tar
 
 # Set default shell option to fail-fast on pipes
@@ -32,6 +33,10 @@ RUN mkdir -p /fuseki/jena-cli \
 
 # --- Stage 2: Final minimal runtime ---
 FROM eclipse-temurin:21-jre-alpine
+
+# Upgrade OS packages to apply security patches
+#hadolint ignore=DL3018
+RUN apk upgrade --no-cache
 
 # Set environment variables
 ENV FUSEKI_ROOT=/fuseki \
