@@ -4,7 +4,7 @@ Design, technology stack, and component integration of the containerized Apache 
 
 ## Technology Stack
 
-- **Runtime Base**: `alpine:3.24` with a custom minimal JRE built via `jlink`/`jdeps` from `eclipse-temurin:21-jdk-alpine`.
+- **Runtime Base**: `alpine:3.24` with a custom minimal JRE built via `jlink`/`jdeps` from `eclipse-temurin:25-jdk-alpine`.
 - **Database Engine**: Apache Jena / Fuseki (TDB2 storage) with bundled Jena CLI tools.
 - **Search Engine**: Apache Lucene (integrated via `jena-text`).
 - **Security**: Apache Shiro (HTTP Basic authentication, SHA-256 hashed credentials, RBAC).
@@ -14,7 +14,7 @@ Design, technology stack, and component integration of the containerized Apache 
 
 ## Multi-Stage Build
 
-### Stage 1: Builder (`eclipse-temurin:21-jdk-alpine`)
+### Stage 1: Builder (`eclipse-temurin:25-jdk-alpine`)
 
 1. Installs corporate CA certificates from `certs/`.
 2. Downloads and extracts Apache Jena Fuseki and Jena CLI tools.
