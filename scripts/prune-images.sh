@@ -12,13 +12,16 @@ else
   exit 1
 fi
 
-IMAGE_NAME="localhost/fuseki"
+IMAGE_NAME="${IMAGE_NAME:-fuseki}"
 
 # 2. Untag "dev-custom" if it exists
 echo "[Prune] Untagging 'dev-custom'..."
 if "$ENGINE" image inspect "${IMAGE_NAME}:dev-custom" >/dev/null 2>&1; then
   "$ENGINE" rmi "${IMAGE_NAME}:dev-custom"
   echo "[Prune] Untagged ${IMAGE_NAME}:dev-custom successfully."
+elif "$ENGINE" image inspect "localhost/${IMAGE_NAME}:dev-custom" >/dev/null 2>&1; then
+  "$ENGINE" rmi "localhost/${IMAGE_NAME}:dev-custom"
+  echo "[Prune] Untagged localhost/${IMAGE_NAME}:dev-custom successfully."
 else
   echo "[Prune] Tag ${IMAGE_NAME}:dev-custom does not exist. Skipping."
 fi
