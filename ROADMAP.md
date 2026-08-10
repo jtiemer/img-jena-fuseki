@@ -61,7 +61,7 @@ Current and future feature status of the image.
 - Multi-stage build uses `eclipse-temurin:21-jdk-alpine` to analyze JAR dependencies via `jdeps` and assemble a minimal
   JRE via `jlink` with `--strip-debug`, `--no-man-pages`, `--no-header-files`, and `--compress=2`.
 - Prunes Windows scripts (`*.bat`, `*.cmd`) and unused binaries in Stage 1.
-- Copies `/custom-jre` into an `alpine:3.20` runtime base.
+- Copies `/custom-jre` into an `alpine:3.24` runtime base.
 - Image size: ~167 MB (down from ~294 MB with the full Temurin JRE).
 
 #### DONE: Container startup with health checks

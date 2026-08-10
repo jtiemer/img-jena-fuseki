@@ -5,7 +5,7 @@ embedded Lucene fulltext search, Apache Shiro authentication, Apache Jena CLI to
 Compatible with Docker and Podman. Preconfigured for immediate development use; production deployments override
 configuration via volume mounts.
 
-The image uses a custom minimal JRE built with `jlink`/`jdeps` on an `alpine:3.20` base, reducing the total image size
+The image uses a custom minimal JRE built with `jlink`/`jdeps` on an `alpine:3.24` base, reducing the total image size
 to ~167 MB while retaining full Fuseki, Lucene, and Jena CLI tool functionality.
 
 ## Default Configuration
