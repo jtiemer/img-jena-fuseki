@@ -11,6 +11,7 @@ Current and future feature status of the image.
 |                     | Named volume persistence        | DONE    | -        |
 |                     | Dev/test container lifecycle    | DONE    | -        |
 |                     | Stale local image pruning       | DONE    | -        |
+|                     | Minified custom JRE (`jlink`)    | DONE    | -        |
 |                     | Env vars & configuration        | PARTIAL | -        |
 | **RDF & Search**    | TDB2 + Lucene indexing          | DONE    | -        |
 |                     | Multi-dataset support           | PARTIAL | -        |
@@ -76,8 +77,14 @@ Current and future feature status of the image.
 - `scripts/prune-images.sh` untags the `dev-custom` build tag and removes dangling (untagged) images left behind by
   repeated local builds.
 
-#### PARTIAL: Configuration via environment variables
+#### DONE: Minified custom JRE and image optimization (`jlink` + `jdeps`)
 
+- Uses multi-stage build with `eclipse-temurin:21-jdk-alpine` to analyze dependencies via `jdeps` and assemble a minimal custom JRE via `jlink`.
+- Prunes Windows scripts (`*.bat`, `*.cmd`), sample files, and unnecessary binaries in Stage 1.
+- Copies `/custom-jre` into a minimal `alpine:3.20` runtime base image.
+- Reduces total container image size from ~294 MB down to ~167 MB (a 43% size reduction) while keeping full Fuseki, Lucene, and Jena CLI tool functionality.
+
+#### PARTIAL: Configuration via environment variables
 - **Supported**: Sourcing `.env.run`; configuration variables: `JVM_ARGS`, `LOGGING`, `REQUIRE_LUCENE`,
   `FUSEKI_CONFIG_DIR`, `FUSEKI_DATA`, `FUSEKI_RUN`, `FUSEKI_HOME`, `FUSEKI_BASE`.
 - **Gaps**: No template variable expansion in `config.ttl`; Lucene index path is hardcoded inside `config.ttl`.
