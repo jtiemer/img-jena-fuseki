@@ -61,7 +61,7 @@ RUN java --list-modules | cut -d'@' -f1 > /tmp/valid_modules.txt \
       --output /custom-jre
 
 # --- Stage 2: Final minimal runtime ---
-FROM alpine:3.20
+FROM alpine:3.24
 
 # Set environment variables
 ENV FUSEKI_ROOT=/fuseki \
