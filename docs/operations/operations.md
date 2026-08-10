@@ -4,8 +4,7 @@ Operating procedures for the containerized Fuseki service.
 
 ## Health Checks
 
-Unauthenticated GET request to `/$/ping` returns HTTP 200 and an ISO 8601 timestamp. Suitable for container runtime and
-orchestrator liveness/readiness probes.
+Unauthenticated GET to `/$/ping` returns HTTP 200 with an ISO 8601 timestamp. Suitable for liveness/readiness probes.
 
 ```bash
 curl -fsS http://localhost:3030/$/ping
@@ -13,16 +12,18 @@ curl -fsS http://localhost:3030/$/ping
 
 ## Logging
 
-- All logs are directed to `stdout` via `log4j2`. Default log level is `INFO`.
-- **JSON Format**: Switch to structured JSON logging by appending `-Dlog.appender=ConsoleJson` to `JVM_ARGS` (e.g.
-  `JVM_ARGS="-Dlog.appender=ConsoleJson -Xms512m -Xmx1g"`).
+All output goes to `stdout` via log4j2. Default level: `INFO`.
+
+- **Plain text** (default): human-readable `PatternLayout`.
+- **Structured JSON**: set `JVM_ARGS="-Dlog.appender=ConsoleJson -Xms512m -Xmx1g"` to switch to JSON output.
 
 ## Data Persistence
 
-- RDF dataset stored in `/fuseki/data/default` (TDB2 layout).
-- Fulltext index stored in `/fuseki/data/default-lucene` (Lucene layout).
-- Default volume: `${CONTAINER_NAME}-dev-data` (e.g. `fuseki-dev-data`), created deterministically by
-  `scripts/manage-container.sh create dev`. Monitor disk usage:
+- TDB2 dataset: `/fuseki/data/default`.
+- Lucene index: `/fuseki/data/default-lucene`.
+- Default dev volume: `${CONTAINER_NAME}-dev-data` (created by `manage-container.sh create dev`).
+
+Inspect volume:
 
 ```bash
 docker volume inspect fuseki-dev-data
@@ -30,74 +31,102 @@ docker volume inspect fuseki-dev-data
 
 ## Backup & Restore
 
-### Backup
+### Host-level backup
 
-Pruning write traffic is recommended before zipping.
+`pipelines/backup.sh` creates a tarball of the host data directory (default: `.local/fuseki-data`):
 
 ```bash
 bash pipelines/backup.sh
 ```
 
-- Creates a tarball of host data directory (`.local/fuseki-data`) named
-  `.local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz`.
-- *Note*: Operates on host filesystem. Requires container to run with host bind mount (mapping `.local/fuseki-data` to
-  `/fuseki/data`). For named volumes, use native container export commands.
+Output: `.local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz`.
+
+**Limitation**: operates on the host filesystem. For named volumes, use container engine export or `tdb2.tdbbackup`.
+
+**Warning**: `tar` on a live TDB2 directory risks capturing partial writes. Stop the container first or use
+transaction-safe alternatives below.
+
+### Transaction-safe backup (CLI tools)
+
+The container bundles `tdb2.tdbbackup`. Stop the server first (TDB2 forbids concurrent JVM access):
+
+```bash
+bash scripts/manage-container.sh stop dev
+docker run --rm -v fuseki-dev-data:/fuseki/data fuseki:latest \
+  tdb2.tdbbackup --loc=/fuseki/data/default
+```
+
+This generates a `.nq.gz` dump file inside the TDB2 directory.
 
 ### Restore
 
-1. Stop container:
-
-```bash
-podman stop fuseki
-```
-
-2. Unpack backup into target host directory:
-
-```bash
-bash pipelines/restore.sh .local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz
-```
-
-3. Restart container:
-
-```bash
-podman start fuseki
-```
+1. Stop the container:
+   ```bash
+   bash scripts/manage-container.sh stop dev
+   ```
+2. Extract backup:
+   ```bash
+   bash pipelines/restore.sh .local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz
+   ```
+3. Restart:
+   ```bash
+   bash scripts/manage-container.sh start dev
+   ```
 
 ## Authentication & Authorization
 
-- **Shiro Configuration**: `config/shiro.ini` defines users, roles, and URL rules.
-    - `/$/status` and `/$/ping`: Anonymous access (`anon`).
-    - All other paths: Basic authentication required (`authcBasic`).
-- **Production Overrides**: Mount overrides for config files securely (`config.ttl`, `shiro.ini`, `log4j2.xml`) using
-  file-level mounts via environment variables, or mount a directory directly to `/fuseki/config`.
+`config/shiro.ini` defines users, roles, and URL rules:
+
+| Path | Access |
+|---|---|
+| `/$/status`, `/$/ping` | Anonymous |
+| All other paths | HTTP Basic Auth required |
+
+Default users:
+
+| User | Password | Role |
+|---|---|---|
+| `admin` | `change-me` | Full access |
+| `reader` | `change-me` | Query only |
+
+**Production**: mount a custom `shiro.ini` with unique SHA-256 hashed passwords at `/fuseki/config/shiro.ini:ro`.
+Generate hashes: `echo -n "password" | sha256sum`.
 
 ## Apache Jena CLI Tools
 
-The container image includes the full suite of Apache Jena command-line tools (e.g., `tdb2.tdbloader`, `tdb2.tdbcompact`, `tdb2.tdbquery`, `tdb2.tdbbackup`) preconfigured under `JENA_HOME=/fuseki/app/jena-cli` and registered in the system `$PATH`.
+The image includes Jena CLI tools at `JENA_HOME=/fuseki/app/jena-cli` (on `PATH`):
+`tdb2.tdbloader`, `tdb2.tdbquery`, `tdb2.tdbcompact`, `tdb2.tdbbackup`, `tdb2.tdbdump`, `tdb2.xloader`.
 
-### Bulk Loading Datasets
-To load large graphs containing millions of triples with high performance, bypass the HTTP endpoints and run `tdb2.tdbloader` directly inside the container against the persistent TDB2 volume:
+### Bulk loading
+
+Bypass HTTP endpoints for high-performance loading of large datasets:
+
 ```bash
-podman exec -it -u fuseki fuseki-dev tdb2.tdbloader --loc=/fuseki/data/default /path/to/dataset.nt
+docker exec -it fuseki-dev tdb2.tdbloader --loc=/fuseki/data/default /path/to/dataset.nt
 ```
 
-### Database Compaction
-Over time, database deletions and writes leave transaction overhead. Run `tdb2.tdbcompact` to compact the TDB2 storage and reclaim disk space:
+### Database compaction
+
+Reclaim disk space after deletions:
+
 ```bash
-podman exec -it -u fuseki fuseki-dev tdb2.tdbcompact --loc=/fuseki/data/default
+docker exec -it fuseki-dev tdb2.tdbcompact --loc=/fuseki/data/default
 ```
 
-### Transaction-Safe Offline Backup
-Alternatively, to create a consistent, transaction-safe backup dump file natively:
+### Offline query
+
+Query the TDB2 store directly (server must be stopped — TDB2 does not support concurrent JVM access):
+
 ```bash
-podman exec -it -u fuseki fuseki-dev tdb2.tdbbackup --loc=/fuseki/data/default
+docker run --rm -v fuseki-dev-data:/fuseki/data fuseki:latest \
+  tdb2.tdbquery --loc=/fuseki/data/default "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
 ```
-This generates a `.nq.gz` backup file inside the container's TDB2 directory.
+
 ## Hardening
 
 ### Non-Privileged User
 
-Runs under system user `fuseki` (UID 100, GID 101). In Kubernetes, enforce via Pod security context:
+Runs as `fuseki` (UID 100, GID 101). Kubernetes Pod security context:
 
 ```yaml
 securityContext:
@@ -108,13 +137,15 @@ securityContext:
 
 ### Read-Only Root Filesystem
 
-Compatible with `--read-only` root mounts. Requires the following writable paths:
+Compatible with `--read-only`. Required writable paths:
 
-- `/fuseki/data`: Persistent database volume.
-- `/fuseki/run`: Ephemeral, memory-backed `tmpfs` volume (mode 1777).
-- `/tmp`: Ephemeral, memory-backed `tmpfs` volume (mode 1777) for JVM temporary allocations.
+| Path | Mount | Purpose |
+|---|---|---|
+| `/fuseki/data` | Persistent volume | TDB2 database and Lucene index |
+| `/fuseki/run` | `tmpfs` (mode 1777) | Runtime state, Shiro symlink |
+| `/tmp` | `tmpfs` (mode 1777) | JVM temporary files |
 
-Example deployment command:
+Example:
 
 ```bash
 docker run -d \
@@ -123,13 +154,17 @@ docker run -d \
   --tmpfs /fuseki/run:mode=1777 \
   --tmpfs /tmp:mode=1777 \
   -v fuseki-dev-data:/fuseki/data \
+  -v /path/to/config:/fuseki/config:ro \
   -p 3030:3030 \
   fuseki:latest
 ```
 
 ## Capacity Planning
 
-- **Small Graph**: <10K triples, <100 MB disk.
-- **Medium Graph**: ~1M triples, ~1 GB disk.
-- **Large Graph**: >10M triples, >10 GB disk.
-- **JVM Memory**: Defaults to `-Xms512m -Xmx1g` (configurable via `JVM_ARGS`).
+| Scale | Triples | Disk | Notes |
+|---|---|---|---|
+| Small | <10K | <100 MB | Default `JVM_ARGS` sufficient |
+| Medium | ~1M | ~1 GB | Monitor heap usage |
+| Large | >10M | >10 GB | Increase `-Xmx`, consider compaction schedule |
+
+JVM memory defaults: `-Xms512m -Xmx1g` (override via `JVM_ARGS`).
