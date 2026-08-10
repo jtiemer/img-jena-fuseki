@@ -85,6 +85,7 @@ cleanup() {
   if [[ -n "${MOCK_CONFIG_DIR:-}" && -d "$MOCK_CONFIG_DIR" ]]; then
     rm -rf "$MOCK_CONFIG_DIR"
   fi
+  bash "$ROOT_DIR/scripts/prune-images.sh" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
