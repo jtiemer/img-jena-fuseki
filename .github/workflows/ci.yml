@@ -88,8 +88,8 @@ jobs:
           HEAD="${{ github.head_ref }}"
           case "$BASE" in
             dev)
-              if [[ ! "$HEAD" =~ ^(feat|bugfix|chore|refactor|docs|style|perf|test|ci|build)/.+ ]]; then
-                echo "ERROR: PRs into 'dev' must originate from a feat/bugfix/chore/refactor/docs/style/perf/test/ci/build branch (got '$HEAD')." >&2
+              if [[ ! "$HEAD" =~ ^(feat|bugfix|chore|refactor|docs|style|perf|test|ci|build|dependabot)/.+ ]]; then
+                echo "ERROR: PRs into 'dev' must originate from a feat/bugfix/chore/refactor/docs/style/perf/test/ci/build or dependabot branch (got '$HEAD')." >&2
                 exit 1
               fi
               ;;
