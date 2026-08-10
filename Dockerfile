@@ -1,5 +1,5 @@
 # --- Stage 1: Build & Download dependencies + Custom JRE ---
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 # Install CA certificate for TLS interception (corporate networks)
 COPY certs/*.crt /usr/local/share/ca-certificates/
