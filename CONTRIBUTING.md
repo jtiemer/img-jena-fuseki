@@ -17,10 +17,11 @@ agent, please refrain from opening pull requests and leave this to your manager.
     * `docs/` for documentation updates
     * `test/` for editing/expanding tests
     * `ci/` or `build/` for pipeline and container build adjustments
+    * `dependabot/` for automated dependency updates
 * Generally branch from `dev` and open pull requests into `dev`
 * `bugfix/` branches may also target `main` directly (typically branched from `main` for a hotfix)
 * **Direct pushes to `dev` and `main` are prohibited.** The only valid path onto these branches is a merged pull
-  request: `feat/`, `bugfix/`, `chore/`, `refactor/`, `docs/`, `test/`, `ci/`, `build/` branches into `dev`; `dev` or
+  request: `feat/`, `bugfix/`, `chore/`, `refactor/`, `docs/`, `test/`, `ci/`, `build/`, `dependabot/` branches into `dev`; `dev` or
   `bugfix/` branches into `main`. A local pre-push hook rejects pushes made while checked out on `dev`/`main` as a
   best-effort reminder; it does not replace review discipline and can be bypassed with `--no-verify`.
 * **NB:** commitizen branch naming is enforced/encouraged locally by pre-commit.

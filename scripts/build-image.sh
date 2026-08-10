@@ -92,8 +92,8 @@ if [[ "$IMAGE_TAG" == "dev" ]]; then
     dev)
       IMAGE_TAG="${BASE_VERSION}-dev"
       ;;
-    feat/* | bugfix/* | chore/* | refactor/* | docs/* | style/* | perf/* | test/* | ci/* | build/*)
-      # Extract the commitizen prefix (e.g. chore, feat, bugfix) from the branch name
+    feat/* | bugfix/* | chore/* | refactor/* | docs/* | style/* | perf/* | test/* | ci/* | build/* | dependabot/*)
+      # Extract the commitizen prefix (e.g. chore, feat, bugfix, dependabot) from the branch name
       PREFIX="${BRANCH%%/*}"
       IMAGE_TAG="${BASE_VERSION}-${PREFIX}-${COMMIT_SHA}"
       ;;
