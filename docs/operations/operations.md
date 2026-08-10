@@ -21,10 +21,11 @@ curl -fsS http://localhost:3030/$/ping
 
 - RDF dataset stored in `/fuseki/data/default` (TDB2 layout).
 - Fulltext index stored in `/fuseki/data/default-lucene` (Lucene layout).
-- Default volume: `fuseki-data-dev`. Monitor disk usage:
+- Default volume: `${CONTAINER_NAME}-dev-data` (e.g. `fuseki-dev-data`), created deterministically by
+  `scripts/manage-container.sh create dev`. Monitor disk usage:
 
 ```bash
-docker volume inspect fuseki-data-dev
+docker volume inspect fuseki-dev-data
 ```
 
 ## Backup & Restore
@@ -70,6 +71,28 @@ podman start fuseki
 - **Production Overrides**: Mount overrides for config files securely (`config.ttl`, `shiro.ini`, `log4j2.xml`) using
   file-level mounts via environment variables, or mount a directory directly to `/fuseki/config`.
 
+## Apache Jena CLI Tools
+
+The container image includes the full suite of Apache Jena command-line tools (e.g., `tdb2.tdbloader`, `tdb2.tdbcompact`, `tdb2.tdbquery`, `tdb2.tdbbackup`) preconfigured under `JENA_HOME=/fuseki/app/jena-cli` and registered in the system `$PATH`.
+
+### Bulk Loading Datasets
+To load large graphs containing millions of triples with high performance, bypass the HTTP endpoints and run `tdb2.tdbloader` directly inside the container against the persistent TDB2 volume:
+```bash
+podman exec -it -u fuseki fuseki-dev tdb2.tdbloader --loc=/fuseki/data/default /path/to/dataset.nt
+```
+
+### Database Compaction
+Over time, database deletions and writes leave transaction overhead. Run `tdb2.tdbcompact` to compact the TDB2 storage and reclaim disk space:
+```bash
+podman exec -it -u fuseki fuseki-dev tdb2.tdbcompact --loc=/fuseki/data/default
+```
+
+### Transaction-Safe Offline Backup
+Alternatively, to create a consistent, transaction-safe backup dump file natively:
+```bash
+podman exec -it -u fuseki fuseki-dev tdb2.tdbbackup --loc=/fuseki/data/default
+```
+This generates a `.nq.gz` backup file inside the container's TDB2 directory.
 ## Hardening
 
 ### Non-Privileged User
@@ -99,7 +122,7 @@ docker run -d \
   --read-only \
   --tmpfs /fuseki/run:mode=1777 \
   --tmpfs /tmp:mode=1777 \
-  -v fuseki-data-dev:/fuseki/data \
+  -v fuseki-dev-data:/fuseki/data \
   -p 3030:3030 \
   fuseki:latest
 ```

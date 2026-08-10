@@ -19,6 +19,7 @@ target/
 build/
 dist/
 .env.run
+.manage-container-test.state
 
 # Certificates
 certs/zscaler.crt

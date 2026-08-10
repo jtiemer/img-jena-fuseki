@@ -14,7 +14,8 @@ Guidelines for codebase development and contributions.
 ## Project Structure
 
 - `config/`: Default database (`config.ttl`), authentication (`shiro.ini`), and logging (`log4j2.xml`) setups.
-- `scripts/`: Local scripts to build (`build-image.sh`) and run (`run-local.sh`) the container.
+- `scripts/`: Local scripts to build (`build-image.sh`), manage dev/test containers (`manage-container.sh`), and prune
+  stale local images (`prune-images.sh`).
 - `pipelines/`: Scripts to backup and restore databases (`backup.sh`, `restore.sh`).
 - `tests/`: Smoke syntax tests (`smoke_test.sh`) and container integration tests (`integration_test.sh`).
 - `terraform/`: Scaffolding to deploy resource groups.
@@ -29,22 +30,32 @@ CA certificates, and tags the image:
 
 - `main` branch: `<version>`
 - `dev` branch: `<version>-dev`
-- Feature branches: `<version>-<branch-name>-<commit-sha>`
+- Feature/maintenance branches: `<version>-<prefix>-<commit-sha>` (e.g., `0.0.1-chore-369b880`)
 
 ### Run Image
 
-`scripts/run-local.sh` runs the container with:
+`scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test> [tag]` manages a container named
+`${CONTAINER_NAME}-dev` or `${CONTAINER_NAME}-test` (suffix is mandatory, no other naming is allowed):
 
-- Named volume persistence (`fuseki-data-dev`).
-- Read-only root filesystem with `/fuseki/run` and `/tmp` mounted on `tmpfs`.
-- Configuration overrides via env variables (`FUSEKI_CONFIG_FILE`, `FUSEKI_SHIRO_FILE`, `FUSEKI_LOG4J2_FILE`) mounted as
-  individual file targets inside `/fuseki/config/`.
+- `dev`: mounts a persistent, deterministically-named data volume (`${CONTAINER_NAME}-dev-data`) and a read-only
+  config directory (`FUSEKI_CONFIG_VOLUME`) from `.env.run`.
+- `test`: mounts a dedicated, disposable data volume per instance (`${CONTAINER_NAME}-test-data-<hash>`) and this
+  repo's own `config/` directory; several concurrent test instances are supported (tracked in
+  `.manage-container-test.state`, repo-root, gitignored). Every invocation first sweeps and deletes untracked test
+  containers/volumes matching the naming schema.
+- Both: read-only root filesystem with `/fuseki/run` and `/tmp` mounted on `tmpfs`.
+- `create`/`upgrade` accept an optional `[tag]` argument. Without one: `test` defaults to `latest`; `dev` defaults to
+  the newest local `<image>:*-dev` tag (by build time, not version). `IMAGE_TAG` in the environment overrides both.
+- `upgrade` only targets the dev container (`test` is rejected) and recreates it against the resolved tag, preserving
+  its prior running/stopped state. Test containers are short-lived: recreate them with `create test` instead.
+
+`scripts/prune-images.sh` untags the `dev-custom` build tag and removes dangling (untagged) images left behind by
+repeated local builds.
 
 ### Testing
 
 - **Smoke Check (`tests/smoke_test.sh`)**: Validates repository file structure and shell syntax.
-- **Integration Check (`tests/integration_test.sh`)**: Starts container, tests health ping, SPARQL Query/Update, Lucene
-  fulltext search, data persistence, and credential override.
+- **Integration Check (`tests/integration_test.sh`)**: Starts container, tests health ping, SPARQL Query/Update, Lucene fulltext search, offline query execution via built-in `tdb2.tdbquery` command-line tools, data persistence, and credential override.
 
 ## Git Pre-Commit Hooks
 
