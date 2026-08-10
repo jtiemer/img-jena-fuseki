@@ -6,6 +6,7 @@ Desktop.ini
 # IDEs
 .idea/
 .vscode/
+.pi/
 *.swp
 *.swo
 
