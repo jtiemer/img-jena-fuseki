@@ -1,72 +1,59 @@
-# Apache Jena/Fuseki Database Service (docker/podman image)
+# Apache Jena/Fuseki Database Service (container image)
 
-Build your knowledge graph on an open source database that is _good enough_ for most scenarios. Jena/Fuseki might not be
-the fastest or most feature rich setup available, but it provides a database with RDF and SPARQL compliance plus
-fulltext search, that supports datasets up to a size larger than most applications will ever need.
+A container image packaging [Apache Jena/Fuseki](https://jena.apache.org/documentation/fuseki2/index.html) with
+embedded Lucene fulltext search, Apache Shiro authentication, Apache Jena CLI tools, and persistent TDB2 storage.
+Compatible with Docker and Podman. Preconfigured for immediate development use; production deployments override
+configuration via volume mounts.
 
-This container image packages [Apache Jena/Fuseki](https://jena.apache.org/documentation/fuseki2/index.html) with
-embedded Lucene fulltext search, Apache Shiro authentication, and persistent TDB2 storage. It is preconfigured to work
-with no further configuration for a simple development setup. Using a volume for data persistence is recommended.
+The image uses a custom minimal JRE built with `jlink`/`jdeps` on an `alpine:3.20` base, reducing the total image size
+to ~167 MB while retaining full Fuseki, Lucene, and Jena CLI tool functionality.
 
 ## Default Configuration
 
-The image comes with
+The image ships with:
 
-* a default TDB2 dataset named `default`
-* Lucene full text search enabled on `rdfs:label`, `skos:prefLabel`, and `skos:altLabel` mapped to `text`; and
-  `rdfs:comment` as well as `skos:definition` mapped to `text_long`
-* HTTP API endpoints
-    * _SPARQL 1.1 Query_ on `localhost:3030/default/query`
-    * _SPARQL 1.1 Update_ on `localhost:3030/default/update`
-    * _SHACL Validation_ on `localhost:3030/default/shacl`
-    * _Graph Store HTTP Protocol_ on `localhost:3030/default/data`
-* default configuration in `/config/config.ttl`
-* default users in `/config/shiro.ini` with sha256-hashed passwords
-    * username `admin`, password `change-me`, unrestricted access
-    * username `reader`, password `change-me`, access to sparql query only
-* default logging in `/config/log4j2.xml`
-* basic security
-    * default read only filesystem
-    * unprivileged user `fuseki` running the jvm process
-    * `/fuseki/data/` writable for `fuseki` user
-    * `/fuseki/run/` writable for `fuseki` user
+* A TDB2 dataset named `default`
+* Lucene fulltext search on `rdfs:label`, `skos:prefLabel`, `skos:altLabel` (field `text`) and `rdfs:comment`,
+  `skos:definition` (field `text_long`)
+* HTTP API endpoints (port 3030, Basic Auth required unless noted):
+    * SPARQL 1.1 Query: `/default/query`
+    * SPARQL 1.1 Update: `/default/update`
+    * SHACL Validation: `/default/shacl`
+    * Graph Store Protocol: `/default/data`
+    * Health Check: `/$/ping` (unauthenticated)
+    * Status: `/$/status`
+* Default users (`config/shiro.ini`, SHA-256 hashed passwords):
+    * `admin` / `change-me` (unrestricted)
+    * `reader` / `change-me` (query only)
+* Console and structured JSON logging via log4j2
+* Security defaults:
+    * Read-only root filesystem (`--read-only`)
+    * Non-privileged user `fuseki` (UID 100, GID 101)
+    * `/fuseki/data` and `/fuseki/run` writable; `/tmp` on `tmpfs`
 
-## Documentation Index (Portal)
+## Documentation
 
-For detailed information on the codebase, please refer to the specific files below:
-
-- **Technology Stack & Security Model**: See [docs/architecture/overview.md](docs/architecture/overview.md)
-  (ports, environment variables, multi-stage build structure)
-- **Development & Hook Guidelines**: See [docs/development/guide.md](docs/development/guide.md)
-  (branch naming conventions, conventional commits, pre-commit setup)
-- **Production Operations & Hardening**: See [docs/operations/operations.md](docs/operations/operations.md)
-  (running as non-root user, read-only root filesystem configurations, backup/restore designs)
-- **Operations Runbook**: See [docs/operations/runbook.md](docs/operations/runbook.md)
-  (step-by-step local setup, verification commands, diagnostics, backup execution)
-- **Roadmap & Features**: See [ROADMAP.md](ROADMAP.md)
-  (feature status and next deployment targets)
-- **Version Release History**: See [CHANGELOG.md](CHANGELOG.md) (changelog following Keep a Changelog v1.1.0).
+| Document                                                        | Contents                                                                     |
+|-----------------------------------------------------------------|------------------------------------------------------------------------------|
+| [docs/architecture/overview.md](docs/architecture/overview.md)  | Technology stack, security model, environment variables, API endpoints       |
+| [docs/development/guide.md](docs/development/guide.md)          | Project structure, build/run workflows, pre-commit hooks, CI pipeline        |
+| [docs/operations/operations.md](docs/operations/operations.md)  | Health checks, logging, backup/restore, authentication, hardening, CLI tools |
+| [docs/operations/runbook.md](docs/operations/runbook.md)        | Step-by-step local setup, verification commands, troubleshooting             |
+| [ROADMAP.md](ROADMAP.md)                                        | Feature status and priorities                                                |
+| [CHANGELOG.md](CHANGELOG.md)                                    | Version history                                                              |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                              | Contribution rules, branch naming, commit conventions                        |
 
 ---
 
 ## Quickstart
 
-The image is compatible with **Docker** and **Podman**. To get going as quickly as possible, pull the image from the
-registry:
+Pull the image:
 
 ```bash
-podman pull fake-registry.azurecr.io/fuseki:0.0.1
+podman pull fake-registry.azurecr.io/fuseki:0.1.0
 ```
 
-Create a data volume (optional, `fuseki-data` is used as example):
-
-```bash
-podman volume create fuseki-data
-```
-
-Then adjust the configuration files in `config` to your liking, i.e. `config.ttl`, `shiro.ini`, and `log4j2.xml`.
-
-Mount the volume and the config directory into the container on startup:
+Run with a data volume and read-only root filesystem:
 
 ```bash
 podman run -d \
@@ -77,33 +64,27 @@ podman run -d \
   -p 3030:3030 \
   -v fuseki-data:/fuseki/data \
   -v /path/to/custom/config:/fuseki/config:ro \
-  fake-registry.azurecr.io/fuseki:0.0.1
+  fake-registry.azurecr.io/fuseki:0.1.0
 ```
 
-**NB:** Replace `podman` with `docker` to select the desired container engine.
+Replace `podman` with `docker` as needed.
 
-## Slightly slower Start
+## Build from Source
 
-### 1. Build the Image
-
-The build script resolves the latest stable Fuseki release. If one or more corporate proxies like e.g. ZScaler are part
-of the equation, their certificate files must be copied into `certs/` as `.crt` files before building.
-
-The build script is compatible with `docker` and `podman`. Run it with:
+The build script auto-resolves the latest stable Fuseki version from Maven Central. Corporate proxy certificates go
+into `certs/` as `.crt` files before building.
 
 ```bash
 bash scripts/build-image.sh
 ```
 
-### 2. Run Container Locally
-
-Run the image in detached mode on port `3030`:
+## Run Locally
 
 ```bash
 bash scripts/manage-container.sh create dev
 ```
 
-Verify the service is running and healthy:
+Verify:
 
 ```bash
 curl -fsS http://localhost:3030/$/ping
@@ -113,23 +94,21 @@ curl -fsS http://localhost:3030/$/ping
 
 ## Tests
 
-Verify the repository health with these tests:
-
-**Smoke Checks** (file validation, shell compilation syntax):
+**Smoke checks** (file presence, shell syntax, optional `shellcheck`/`shfmt`):
 
 ```bash
-    bash tests/smoke_test.sh
+bash tests/smoke_test.sh
 ```
 
-**Integration Checks** (SPARQL query/update, fulltext index, restart persistence, config overrides):
+**Integration checks** (SPARQL query/update, fulltext search, GSP, SHACL validation, persistence, CLI tools, config
+override):
 
- ```bash
-    bash tests/integration_test.sh
- ```
+```bash
+bash tests/integration_test.sh
+```
 
 ## Acknowledgements
 
-Thanks go to the creators and maintainers of
-the [SemanticComputing/fuseki-docker](https://github.com/SemanticComputing/fuseki-docker) image. It inspired this
-repository and served as my first relevant RDF database when I could not find any other working images of free and open
-source triplestore/RDF databases.
+Thanks to the creators and maintainers of
+[SemanticComputing/fuseki-docker](https://github.com/SemanticComputing/fuseki-docker). It inspired this repository and
+served as my first working RDF database image.

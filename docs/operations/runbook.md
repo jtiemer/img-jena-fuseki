@@ -1,38 +1,38 @@
 # Runbook
 
-Step-by-step procedures for local development, data lifecycle management, and validation.
+Step-by-step procedures for local development, testing, and data management.
 
-## Local Setup & Verification
+## Local Setup
 
-### 1. Validate Scaffolding
+### 1. Validate scaffolding
 
-Checks file presence and bash script syntax.
+Checks file presence, shell syntax, and (optionally) `shellcheck`/`shfmt`:
 
 ```bash
 bash tests/smoke_test.sh
 ```
 
-### 2. Build Container Image
+### 2. Build image
 
 ```bash
 bash scripts/build-image.sh
 ```
 
-### 3. Start Container Instance
+### 3. Create and start dev container
 
 ```bash
 bash scripts/manage-container.sh create dev
 ```
 
-### 4. Verify Service Health
+### 4. Verify health
 
 ```bash
 curl -fsS http://localhost:3030/$/ping
 ```
 
-Expected: ISO 8601 timestamp response.
+Expected: ISO 8601 timestamp.
 
-### 5. Check Initial Database State
+### 5. Query initial state
 
 ```bash
 curl -fsS -u admin:change-me \
@@ -41,9 +41,9 @@ curl -fsS -u admin:change-me \
   --data-urlencode "query=SELECT (COUNT(?s) as ?count) WHERE { ?s ?p ?o }"
 ```
 
-Expected: JSON response with triple count equal to `0`.
+Expected: `count = 0`.
 
-### 6. Insert Triple
+### 6. Insert a triple
 
 ```bash
 curl -fsS -u admin:change-me -X POST \
@@ -51,9 +51,7 @@ curl -fsS -u admin:change-me -X POST \
   --data-urlencode "update=PREFIX ex: <http://example.org/> INSERT DATA { ex:item1 ex:name \"Test Item\" . }"
 ```
 
-Expected: HTTP `200` response.
-
-### 7. Retrieve Inserted Triple
+### 7. Query the triple
 
 ```bash
 curl -fsS -u admin:change-me \
@@ -64,44 +62,63 @@ curl -fsS -u admin:change-me \
 
 Expected: JSON containing `Test Item`.
 
-### 8. Test Fulltext Index Search
+### 8. Fulltext search
 
 ```bash
 curl -fsS -u admin:change-me \
   -H "Accept: application/sparql-results+json" \
   -G "http://localhost:3030/default/query" \
-  --data-urlencode "query=PREFIX text: <http://jena.apache.org/text#> PREFIX ex: <http://example.org/> SELECT ?item WHERE { (?item ?score ?name) text:query (ex:name 'Test') . }"
+  --data-urlencode "query=PREFIX text: <http://jena.apache.org/text#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?s ?label WHERE { (?s ?score ?label) text:query (rdfs:label \"test\") . }"
 ```
 
-Expected: JSON containing `http://example.org/item1`.
+### 9. Verify persistence
 
-### 9. Verify Data Persistence
-
-Restart the container and query back the triple:
+Restart and re-query:
 
 ```bash
-docker restart fuseki-dev
+bash scripts/manage-container.sh stop dev
+bash scripts/manage-container.sh start dev
+# wait for health check
 curl -fsS -u admin:change-me \
   -H "Accept: application/sparql-results+json" \
   -G "http://localhost:3030/default/query" \
-  --data-urlencode "query=SELECT ?name WHERE { ?s <http://example.org/name> ?name }"
+  --data-urlencode "query=PREFIX ex: <http://example.org/> SELECT ?name WHERE { ?s ex:name ?name }"
 ```
 
-Expected: Triple `Test Item` is returned.
+Expected: `Test Item` still returned.
+
+---
+
+## Integration Tests
+
+Run the full integration test suite (builds image, creates test container, runs all checks, cleans up):
+
+```bash
+FOR_TESTS=true bash scripts/build-image.sh
+bash tests/integration_test.sh
+```
+
+Test coverage: SPARQL query/update, named-graph isolation, Lucene search, GSP read/write, SHACL validation, restart
+persistence, Jena CLI offline query, config mount override.
 
 ---
 
 ## Data Management
 
-### Backup Local host-bound Data
+### Backup
 
 ```bash
 bash pipelines/backup.sh
 ```
 
-Expected output: `.local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz`.
+Output: `.local/backups/fuseki-data-YYYYMMDD-HHMMSS.tar.gz`.
 
-### Restore local host-bound Data
+For transaction-safe backups, stop the container and use `tdb2.tdbbackup` (see
+[operations guide](operations.md#transaction-safe-backup-cli-tools)).
+
+### Restore
 
 ```bash
 bash scripts/manage-container.sh stop dev
@@ -111,19 +128,9 @@ bash scripts/manage-container.sh start dev
 
 ---
 
-## Run Integration Tests
-
-Executes the full test plan inside a temporary container.
-
-```bash
-bash tests/integration_test.sh
-```
-
----
-
 ## Cleanup
 
-Remove container instance and delete local persistent storage volume:
+Remove container and data volume:
 
 ```bash
 bash scripts/manage-container.sh delete dev
@@ -134,36 +141,51 @@ docker volume rm fuseki-dev-data
 
 ## Troubleshooting
 
-### Port Conflict (Port 3030 already in use)
+### Port 3030 in use
 
-Identify listener and stop it, or bind to a custom port:
+The port auto-resolves. Override manually:
 
 ```bash
-docker ps | grep 3030
 FUSEKI_PORT=3031 bash scripts/manage-container.sh create dev
 ```
 
-### Lucene Indexing Failures
+Or find the current listener:
 
-Verify database configuration contains `text:TextDataset`. To run without index, pass `REQUIRE_LUCENE=false` to
-environment:
+```bash
+docker ps | grep 3030
+```
+
+### Lucene indexing error on startup
+
+Entrypoint checks for `text:TextDataset` in `config.ttl`. To run without fulltext:
 
 ```bash
 REQUIRE_LUCENE=false bash scripts/manage-container.sh create dev
 ```
 
-### Invalid Credentials Override
+### Invalid credentials
 
-Check target mount file content:
+Inspect the mounted Shiro config:
 
 ```bash
 docker exec fuseki-dev cat /fuseki/config/shiro.ini
 ```
 
-### Query Dataset Locally (Offline Verification)
+### Offline database query
 
-To query the database directly from the CLI inside the container (e.g., for offline diagnostics):
+Query TDB2 directly via CLI (server must be stopped):
 
 ```bash
-docker exec -it fuseki-dev tdb2.tdbquery --loc=/fuseki/data/default "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
+docker exec -it fuseki-dev tdb2.tdbquery \
+  --loc=/fuseki/data/default "SELECT * WHERE { ?s ?p ?o } LIMIT 10"
+```
+
+### Container permission errors
+
+On Linux, `mktemp -d` creates directories with mode 700 owned by the host UID. If mounting into the container as a
+config override, ensure the directory is readable by UID 100:
+
+```bash
+chmod 755 /path/to/config/dir
+chmod 644 /path/to/config/dir/*
 ```
