@@ -36,8 +36,6 @@ repos:
     rev: v1.96.1
     hooks:
       - id: terraform_fmt
-        args:
-          - --tf-path=tofu
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
     hooks:
