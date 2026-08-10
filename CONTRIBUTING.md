@@ -18,6 +18,11 @@ agent, please refrain from opening pull requests and leave this to your manager.
     * `test/` for editing/expanding tests
     * `ci/` or `build/` for pipeline and container build adjustments
 * Generally branch from `dev` and open pull requests into `dev`
+* `bugfix/` branches may also target `main` directly (typically branched from `main` for a hotfix)
+* **Direct pushes to `dev` and `main` are prohibited.** The only valid path onto these branches is a merged pull
+  request: `feat/`, `bugfix/`, `chore/`, `refactor/`, `docs/`, `test/`, `ci/`, `build/` branches into `dev`; `dev` or
+  `bugfix/` branches into `main`. A local pre-push hook rejects pushes made while checked out on `dev`/`main` as a
+  best-effort reminder; it does not replace review discipline and can be bypassed with `--no-verify`.
 * **NB:** commitizen branch naming is enforced/encouraged locally by pre-commit.
 
 ## Commit Message Conventions
@@ -40,6 +45,26 @@ feat(auth): integrate basic auth matching shiro rules
 
 **NB:** Commitizen is used to manage version numbers and changelogs. Read their docs.
 
+## Version Bumps
+
+Before merging any branch into `dev` or `main`, manually bump the version so it is strictly greater than the target
+branch's current version:
+
+```bash
+cz bump --increment PATCH   # or MINOR / MAJOR, per the changes in the branch
+```
+
+Verify it before pushing:
+
+```bash
+bash scripts/hooks/enforce-version-bump.sh dev    # or: main
+```
+
+A pre-push hook runs this automatically for any branch other than `dev`/`main` itself (comparing against `dev`). It
+is a reminder, not a hard gate — it can be bypassed with `--no-verify`, and CI does not re-check it. On merge, CI
+tags the resulting commit `v<version>` on the branch it landed on (`scripts/tag-release.sh`); if the version was not
+bumped, no tag is created and the release step fails loudly.
+
 ## Code Quality (repo setup)
 
 To achieve some basic code quality, a number of `pre-commit` hooks is used locally. You pretty much need to install it
@@ -57,10 +82,12 @@ Install all hooks by executing
 ```bash
     pre-commit install
     pre-commit install --hook-type commit-msg
+    pre-commit install --hook-type pre-push
  ```
 
 Hooks are executed on `git commit`. The linters `hadolint`, `shellcheck`, `tfsec`, and `gitleaks` are **blocking** and
-must pass.
+must pass. The `git push` hooks reject direct pushes to `dev`/`main` and remind you to bump the version (see
+"Version Bumps" above).
 
 The test suites `smoke_test` and `integration_test` are locally **non-blocking**. They will show logs and errors, but
 will not block commits.
