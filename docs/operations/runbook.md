@@ -127,7 +127,7 @@ Remove container instance and delete local persistent storage volume:
 
 ```bash
 bash scripts/manage-container.sh delete dev
-docker volume rm fuseki-data-dev
+docker volume rm fuseki-dev-data
 ```
 
 ---

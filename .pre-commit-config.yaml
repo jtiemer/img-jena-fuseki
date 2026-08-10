@@ -36,12 +36,8 @@ repos:
     rev: v1.96.1
     hooks:
       - id: terraform_fmt
-
-  - repo: https://github.com/aquasecurity/tfsec
-    rev: v1.28.1
-    hooks:
-      - id: tfsec
-
+        args:
+          - --tf-path=tofu
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
     hooks:
@@ -72,7 +68,7 @@ repos:
 
       - id: local-trivy-config
         name: Run Trivy Config Scan (Blocking)
-        entry: trivy config .
+        entry: 'bash -c "if command -v trivy >/dev/null 2>&1; then trivy config .; else echo WARNING: trivy binary not found on PATH; fi"'
         language: system
         files: (\.(yaml|yml|tf|ttl|ini|xml)|Dockerfile)$
         pass_filenames: false

@@ -37,9 +37,12 @@ CA certificates, and tags the image:
 `scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test> [tag]` manages a container named
 `${CONTAINER_NAME}-dev` or `${CONTAINER_NAME}-test` (suffix is mandatory, no other naming is allowed):
 
-- `dev`: mounts persistent data (`FUSEKI_DATA_VOLUME`) and a read-only config directory (`FUSEKI_CONFIG_VOLUME`) from
-  `.env.run`.
-- `test`: no volumes; runs entirely on defaults baked into the image.
+- `dev`: mounts a persistent, deterministically-named data volume (`${CONTAINER_NAME}-dev-data`) and a read-only
+  config directory (`FUSEKI_CONFIG_VOLUME`) from `.env.run`.
+- `test`: mounts a dedicated, disposable data volume per instance (`${CONTAINER_NAME}-test-data-<hash>`) and this
+  repo's own `config/` directory; several concurrent test instances are supported (tracked in
+  `.manage-container-test.state`, repo-root, gitignored). Every invocation first sweeps and deletes untracked test
+  containers/volumes matching the naming schema.
 - Both: read-only root filesystem with `/fuseki/run` and `/tmp` mounted on `tmpfs`.
 - `create`/`upgrade` accept an optional `[tag]` argument. Without one: `test` defaults to `latest`; `dev` defaults to
   the newest local `<image>:*-dev` tag (by build time, not version). `IMAGE_TAG` in the environment overrides both.

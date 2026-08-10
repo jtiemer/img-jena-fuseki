@@ -61,15 +61,18 @@ Current and future feature status of the image.
 
 #### DONE: Named volume persistence
 
-- `scripts/manage-container.sh create dev` mounts persistent data to named volume (default: `fuseki-data-dev`).
+- `scripts/manage-container.sh create dev` mounts persistent data to a deterministically-named volume
+  (`${CONTAINER_NAME}-dev-data`).
 - Avoids host bind-mount filesystem sharing complications across platforms.
 
 #### DONE: Dev/test container lifecycle management
 
 - `scripts/manage-container.sh <create|start|stop|delete|upgrade> <dev|test>` names containers exclusively as
   `${CONTAINER_NAME}-dev` or `${CONTAINER_NAME}-test`.
-- `dev` mounts `FUSEKI_DATA_VOLUME` and a read-only `FUSEKI_CONFIG_VOLUME` from `.env.run`; `test` stays ephemeral
-  (no volumes) for disposable, isolated integration runs.
+- `dev` mounts a persistent, deterministic data volume (`${CONTAINER_NAME}-dev-data`) and a read-only
+  `FUSEKI_CONFIG_VOLUME` from `.env.run`; `test` mounts a dedicated, disposable data volume per instance
+  (`${CONTAINER_NAME}-test-data-<hash>`), supporting several concurrent instances tracked in
+  `.manage-container-test.state`.
 - `upgrade` recreates the target container against `<image>:latest`, preserving its prior running/stopped state.
 
 #### DONE: Stale local image pruning

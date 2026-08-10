@@ -21,10 +21,11 @@ curl -fsS http://localhost:3030/$/ping
 
 - RDF dataset stored in `/fuseki/data/default` (TDB2 layout).
 - Fulltext index stored in `/fuseki/data/default-lucene` (Lucene layout).
-- Default volume: `fuseki-data-dev`. Monitor disk usage:
+- Default volume: `${CONTAINER_NAME}-dev-data` (e.g. `fuseki-dev-data`), created deterministically by
+  `scripts/manage-container.sh create dev`. Monitor disk usage:
 
 ```bash
-docker volume inspect fuseki-data-dev
+docker volume inspect fuseki-dev-data
 ```
 
 ## Backup & Restore
@@ -121,7 +122,7 @@ docker run -d \
   --read-only \
   --tmpfs /fuseki/run:mode=1777 \
   --tmpfs /tmp:mode=1777 \
-  -v fuseki-data-dev:/fuseki/data \
+  -v fuseki-dev-data:/fuseki/data \
   -p 3030:3030 \
   fuseki:latest
 ```

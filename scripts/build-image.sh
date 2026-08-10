@@ -43,7 +43,9 @@ resolve_latest_fuseki_version() {
 FUSEKI_VERSION="${FUSEKI_VERSION:-$(resolve_latest_fuseki_version)}"
 JENA_CLI_TOOLS_VERSION="${JENA_CLI_TOOLS_VERSION:-$FUSEKI_VERSION}"
 
-if command -v podman >/dev/null 2>&1; then
+if [[ -n "${ENGINE:-}" ]]; then
+  : # Caller specified ENGINE override
+elif command -v podman >/dev/null 2>&1; then
   ENGINE="podman"
 elif command -v docker >/dev/null 2>&1; then
   ENGINE="docker"
@@ -51,6 +53,8 @@ else
   echo "ERROR: neither podman nor docker is available" >&2
   exit 1
 fi
+
+FOR_TESTS="${FOR_TESTS:-false}"
 
 if [[ "$IMAGE_TAG" == "dev" ]]; then
   BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
@@ -71,14 +75,32 @@ if [[ "$IMAGE_TAG" == "dev" ]]; then
     exit 1
   fi
 
-  if [[ "$BRANCH" == "main" ]]; then
-    IMAGE_TAG="${VERSION}"
-  elif [[ "$BRANCH" == "dev" ]]; then
-    IMAGE_TAG="${VERSION}-dev"
+  if [[ "$FOR_TESTS" == "true" ]]; then
+    # Built specifically to be exercised by tests/*.sh; branch/tag state is irrelevant.
+    IMAGE_TAG="${VERSION}-test"
   else
-    # Extract the commitizen prefix (e.g. chore, feat, bugfix) from the branch name
-    PREFIX="${BRANCH%%/*}"
-    IMAGE_TAG="${VERSION}-${PREFIX}-${COMMIT_SHA}"
+    # Base version: the exact tag on HEAD if one exists (a just-released commit),
+    # otherwise the in-progress version from .cz.toml.
+    EXACT_TAG=$(git describe --tags --exact-match --match 'v*' HEAD 2>/dev/null || true)
+    BASE_VERSION="${EXACT_TAG#v}"
+    [[ -z "$BASE_VERSION" ]] && BASE_VERSION="$VERSION"
+
+    case "$BRANCH" in
+    main)
+      IMAGE_TAG="$BASE_VERSION"
+      ;;
+    dev)
+      IMAGE_TAG="${BASE_VERSION}-dev"
+      ;;
+    feat/* | bugfix/* | chore/* | refactor/* | docs/* | style/* | perf/* | test/* | ci/* | build/*)
+      # Extract the commitizen prefix (e.g. chore, feat, bugfix) from the branch name
+      PREFIX="${BRANCH%%/*}"
+      IMAGE_TAG="${BASE_VERSION}-${PREFIX}-${COMMIT_SHA}"
+      ;;
+    *)
+      IMAGE_TAG="${BASE_VERSION}-custom"
+      ;;
+    esac
   fi
 fi
 

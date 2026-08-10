@@ -12,6 +12,7 @@ ENV FUSEKI_HOME=/fuseki/app \
 
 #hadolint ignore=DL3018
 RUN sed -i 's/https/http/g' /etc/apk/repositories \
+    && apk upgrade --no-cache \
     && apk add --no-cache curl tar binutils findutils
 
 # Set default shell option to fail-fast on pipes
@@ -74,9 +75,10 @@ ENV FUSEKI_ROOT=/fuseki \
     JAVA_HOME=/custom-jre \
     PATH="/custom-jre/bin:/fuseki/app/jena-cli/bin:${PATH}"
 
-# Install minimal runtime system utilities
+# Install minimal runtime system utilities and upgrade OS packages
 #hadolint ignore=DL3018
 RUN sed -i 's/https/http/g' /etc/apk/repositories \
+    && apk upgrade --no-cache \
     && apk add --no-cache ca-certificates tzdata bash curl
 
 # Create non-privileged user and group with explicit UID/GID
