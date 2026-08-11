@@ -25,9 +25,9 @@ jobs:
       PCT_TFPATH: tofu
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -36,7 +36,7 @@ jobs:
           pip install commitizen pre-commit
 
       - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@v1
+        uses: opentofu/setup-opentofu@v2
 
       - name: Install Tooling (Hadolint & Trivy)
         run: |
@@ -44,7 +44,7 @@ jobs:
           sudo chmod +x /usr/local/bin/hadolint
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
       - name: Cache Pre-commit Environments
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -88,8 +88,8 @@ jobs:
           HEAD="${{ github.head_ref }}"
           case "$BASE" in
             dev)
-              if [[ ! "$HEAD" =~ ^(feat|bugfix|chore|refactor|docs|style|perf|test|ci|build)/.+ ]]; then
-                echo "ERROR: PRs into 'dev' must originate from a feat/bugfix/chore/refactor/docs/style/perf/test/ci/build branch (got '$HEAD')." >&2
+              if [[ ! "$HEAD" =~ ^(feat|bugfix|chore|refactor|docs|style|perf|test|ci|build|dependabot)/.+ ]]; then
+                echo "ERROR: PRs into 'dev' must originate from a feat/bugfix/chore/refactor/docs/style/perf/test/ci/build or dependabot branch (got '$HEAD')." >&2
                 exit 1
               fi
               ;;
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

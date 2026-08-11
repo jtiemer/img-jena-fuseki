@@ -6,6 +6,7 @@ Desktop.ini
 # IDEs
 .idea/
 .vscode/
+.pi/
 *.swp
 *.swo
 
@@ -15,6 +16,7 @@ Desktop.ini
 
 # Build / Local
 .local/
+.terraform/
 target/
 build/
 dist/

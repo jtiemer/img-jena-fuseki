@@ -13,7 +13,7 @@ repos:
     hooks:
       - id: branch-check
         args:
-          - --allow=^((feat|bugfix|chore|refactor|docs|style|perf|test|ci|build)/.+|dev|main)$
+          - --allow=^((feat|bugfix|chore|refactor|docs|style|perf|test|ci|build|dependabot)/.+|dev|main)$
 
   - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.10.0

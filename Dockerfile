@@ -1,5 +1,5 @@
 # --- Stage 1: Build & Download dependencies + Custom JRE ---
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 # Install CA certificate for TLS interception (corporate networks)
 COPY certs/*.crt /usr/local/share/ca-certificates/
@@ -61,7 +61,7 @@ RUN java --list-modules | cut -d'@' -f1 > /tmp/valid_modules.txt \
       --output /custom-jre
 
 # --- Stage 2: Final minimal runtime ---
-FROM alpine:3.20
+FROM alpine:3.24
 
 # Set environment variables
 ENV FUSEKI_ROOT=/fuseki \
