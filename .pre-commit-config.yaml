@@ -13,7 +13,7 @@ repos:
     hooks:
       - id: branch-check
         args:
-          - --allow=^((feat|bugfix|chore|refactor|docs|style|perf|test|ci|build|dependabot)/.+|dev|main)$
+          - --allow=^((feat|bugfix|fix|chore|refactor|docs|style|perf|test|ci|build|dependabot|release)/.+|main)$
 
   - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.10.0
@@ -68,7 +68,7 @@ repos:
         pass_filenames: false
 
       - id: reject-protected-branch-push
-        name: Reject Direct Push to dev/main
+        name: Reject Direct Push to main
         entry: scripts/hooks/reject-protected-branch-push.sh
         language: script
         stages: [ pre-push ]

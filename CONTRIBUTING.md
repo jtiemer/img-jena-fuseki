@@ -18,12 +18,8 @@ agent, please refrain from opening pull requests and leave this to your manager.
     * `test/` for editing/expanding tests
     * `ci/` or `build/` for pipeline and container build adjustments
     * `dependabot/` for automated dependency updates
-* Branch from `dev` and open pull requests into `dev`. Production releases are promoted by merging `dev` into `main`.
-* `bugfix/` or `fix/` branches may also target `main` directly for critical production fixes.
-* **Direct pushes to `dev` and `main` are prohibited.** The only valid path onto these branches is a merged pull
-  request: `feat/`, `bugfix/`, `chore/`, `refactor/`, `docs/`, `test/`, `ci/`, `build/`, `dependabot/` branches into `dev`; `dev` or
-  `fix/`/`bugfix/` branches into `main`. A local pre-push hook rejects pushes made while checked out on `dev`/`main` as a
-  best-effort reminder; it does not replace review discipline and can be bypassed with `--no-verify`.
+* Create feature/task branches off `main` and open pull requests directly into `main` (Trunk-Based Development).
+* **Direct pushes to `main` are prohibited.** The only valid path onto `main` is a merged pull request. A local pre-push hook rejects direct pushes made while checked out on `main` as a best-effort reminder.
 * **NB:** commitizen branch naming is enforced/encouraged locally by pre-commit.
 
 ## Commit Message Conventions
@@ -48,23 +44,19 @@ feat(auth): integrate basic auth matching shiro rules
 
 ## Version Bumps
 
-Before merging any branch into `dev` or `main`, manually bump the version so it is strictly greater than the target
-branch's current version:
+Release versions are managed with Commitizen (`cz bump`). Version increments are enforced when preparing a release on `main` or `release/*` branches:
 
 ```bash
-cz bump --increment PATCH   # or MINOR / MAJOR, per the changes in the branch
+cz bump --increment PATCH   # or MINOR / MAJOR
 ```
 
 Verify it before pushing:
 
 ```bash
-bash scripts/hooks/enforce-version-bump.sh dev    # or: main
+bash scripts/hooks/enforce-version-bump.sh main
 ```
 
-A pre-push hook runs this automatically for any branch other than `dev`/`main` itself (comparing against `dev`). It
-is a reminder, not a hard gate — it can be bypassed with `--no-verify`, and CI does not re-check it. On merge, CI
-tags the resulting commit `v<version>` on the branch it landed on (`scripts/tag-release.sh`); if the version was not
-bumped, no tag is created and the release step fails loudly.
+On push/merge to `main`, CI automatically executes `scripts/tag-release.sh` to tag the release `v<version>`.
 
 ## Code Quality (repo setup)
 
@@ -87,7 +79,7 @@ Install all hooks by executing
  ```
 
 Hooks are executed on `git commit`. The linters `hadolint`, `shellcheck`, `tfsec`, and `gitleaks` are **blocking** and
-must pass. The `git push` hooks reject direct pushes to `dev`/`main` and remind you to bump the version (see
+must pass. The `git push` hooks reject direct pushes to `main`.
 "Version Bumps" above).
 
 The test suites `smoke_test` and `integration_test` are locally **non-blocking**. They will show logs and errors, but
@@ -103,7 +95,7 @@ runs all the tests on the whole repository.
 
 ## Pull Requests
 
-Make sure all tests pass before opening a pull request into `dev` or `main` (the latter being reserved for `dev` release promotions or critical fixes), and the image builds without error:
+Make sure all tests pass before opening a pull request into `main`, and the image builds without error:
 
 1. Run the smoke test to verify repository scaffolding:
    ```bash
@@ -118,7 +110,7 @@ Make sure all tests pass before opening a pull request into `dev` or `main` (the
    bash tests/integration_test.sh
    ```
 
-**NB:** The CI/CD pipeline enforces these tests as **blocking gates** on all pull requests into `dev` or `main`.
+**NB:** The CI/CD pipeline enforces these tests as **blocking gates** on all pull requests into `main`.
 
 **NB:** There is no guarantee your pull requests will be merged.
 
