@@ -4,11 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - dev
       - main
   push:
     branches:
-      - dev
       - main
 permissions:
   contents: write
@@ -22,7 +20,6 @@ jobs:
     env:
       IMAGE_TAG: ${{ github.sha }}
       ENGINE: docker
-      PCT_TFPATH: tofu
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -34,9 +31,6 @@ jobs:
       - name: Install Commitizen & Pre-commit
         run: |
           pip install commitizen pre-commit
-
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@v2
 
       - name: Install Tooling (Hadolint & Trivy)
         run: |
@@ -87,15 +81,9 @@ jobs:
           BASE="${{ github.base_ref }}"
           HEAD="${{ github.head_ref }}"
           case "$BASE" in
-            dev)
-              if [[ ! "$HEAD" =~ ^(feat|bugfix|chore|refactor|docs|style|perf|test|ci|build|dependabot)/.+ ]]; then
-                echo "ERROR: PRs into 'dev' must originate from a feat/bugfix/chore/refactor/docs/style/perf/test/ci/build or dependabot branch (got '$HEAD')." >&2
-                exit 1
-              fi
-              ;;
             main)
-              if [[ "$HEAD" != "dev" && ! "$HEAD" =~ ^(fix|bugfix)/.+ ]]; then
-                echo "ERROR: PRs into 'main' must originate from 'dev' or a fix/bugfix branch (got '$HEAD')." >&2
+              if [[ ! "$HEAD" =~ ^(feat|bugfix|fix|chore|refactor|docs|style|perf|test|ci|build|dependabot|release)/.+ ]]; then
+                echo "ERROR: PRs into 'main' must originate from a conventional branch (got '$HEAD')." >&2
                 exit 1
               fi
               ;;
@@ -103,24 +91,6 @@ jobs:
               echo "Target branch '$BASE' has no source-branch restriction."
               ;;
           esac
-  dev-release:
-    name: Dev Release Tag
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Tag Release (if version was bumped)
-        run: bash scripts/tag-release.sh
-
-      - name: Build Dev Image
-        run: |
-          # Build the image; build-image.sh will automatically resolve the tag to: <version>-dev
-          bash scripts/build-image.sh
-
   main-release:
     name: Main Release Tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -136,5 +106,4 @@ jobs:
 
       - name: Build Production Image
         run: |
-          # Build the image; build-image.sh will automatically resolve the tag to: <version>
-          bash scripts/build-image.sh
+          bash scripts/build-image.sh --release

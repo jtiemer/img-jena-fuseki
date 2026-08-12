@@ -34,7 +34,6 @@ Current and future feature status of the image.
 |                     | Performance benchmarks           | TODO    | LOW      |
 |                     | SBOM generation & publishing     | TODO    | LOW      |
 |                     | End-to-end / stress test         | TODO    | LOW      |
-| **Infrastructure**  | Terraform scaffolding            | PARTIAL | LOW      |
 |                     | CI/CD pipeline (GitHub Actions)  | DONE    | -        |
 |                     | Container registry release push  | TODO    | HIGH     |
 |                     | Dependabot dependency updates    | DONE    | -        |
@@ -228,9 +227,9 @@ Current and future feature status of the image.
 
 #### DONE: Security & CVE scanning
 
-- Pre-commit: `hadolint` (Dockerfile), `shellcheck` (shell), `gitleaks` (secrets), `trivy config` (IaC/HCL).
+- Pre-commit: `hadolint` (Dockerfile), `shellcheck` (shell), `gitleaks` (secrets).
 - CI: `trivy-action` scans the built container image for CRITICAL/HIGH vulnerabilities.
-- Dependabot monitors GitHub Actions, Dockerfile base images, and Terraform provider versions.
+- Dependabot monitors GitHub Actions and Dockerfile base images.
 
 #### TODO: Performance benchmarks (Priority: LOW)
 
@@ -248,10 +247,6 @@ Current and future feature status of the image.
 
 ### Infrastructure & Deployment
 
-#### PARTIAL: Terraform scaffolding (Azure)
-
-- Provisions Azure Resource Group only (`terraform/main.tf`).
-- **Gaps**: no Container Apps/AKS, networking, Key Vault, or storage account configuration.
 
 #### DONE: CI/CD pipeline
 
@@ -261,11 +256,10 @@ Current and future feature status of the image.
     - Push to `dev`: tags release (`tag-release.sh`), builds dev image.
     - Push to `main`: tags release, builds production image.
 - Pre-commit environment caching via `actions/cache@v4`.
-- OpenTofu configured via `PCT_TFPATH=tofu`.
 
 #### DONE: Dependabot dependency updates
 
-- `.github/dependabot.yml` monitors `github-actions`, `docker`, and `terraform` ecosystems weekly.
+- `.github/dependabot.yml` monitors `github-actions` and `docker` ecosystems weekly.
 
 #### TODO: High availability & failover (Priority: LOW)
 

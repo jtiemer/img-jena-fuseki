@@ -5,18 +5,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "dev"
+    target-branch: "main"
 
   # Maintain Dockerfile base images
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "dev"
-
-  # Maintain OpenTofu/Terraform modules and provider pins
-  - package-ecosystem: "terraform"
-    directory: "/terraform"
-    schedule:
-      interval: "weekly"
-    target-branch: "dev"
+    target-branch: "main"
