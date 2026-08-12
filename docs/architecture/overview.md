@@ -9,7 +9,6 @@ Design, technology stack, and component integration of the containerized Apache 
 - **Search Engine**: Apache Lucene (integrated via `jena-text`).
 - **Security**: Apache Shiro (HTTP Basic authentication, SHA-256 hashed credentials, RBAC).
 - **Logging**: log4j2 (Console plain text and ConsoleJson structured JSON output).
-- **Infrastructure**: Terraform (Azure Resource Group scaffold), OpenTofu-compatible.
 - **CI/CD**: GitHub Actions with Dependabot for dependency updates.
 
 ## Multi-Stage Build

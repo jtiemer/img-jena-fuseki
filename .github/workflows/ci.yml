@@ -22,7 +22,6 @@ jobs:
     env:
       IMAGE_TAG: ${{ github.sha }}
       ENGINE: docker
-      PCT_TFPATH: tofu
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -34,9 +33,6 @@ jobs:
       - name: Install Commitizen & Pre-commit
         run: |
           pip install commitizen pre-commit
-
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@v2
 
       - name: Install Tooling (Hadolint & Trivy)
         run: |
@@ -64,7 +60,7 @@ jobs:
           bash scripts/build-image.sh
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: 'fuseki:${{ github.sha }}'
           format: 'table'
@@ -103,8 +99,8 @@ jobs:
               echo "Target branch '$BASE' has no source-branch restriction."
               ;;
           esac
-  dev-release:
-    name: Dev Release Tag
+  dev-build:
+    name: Dev Build
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
@@ -113,12 +109,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Tag Release (if version was bumped)
-        run: bash scripts/tag-release.sh
-
       - name: Build Dev Image
         run: |
-          # Build the image; build-image.sh will automatically resolve the tag to: <version>-dev
           bash scripts/build-image.sh
 
   main-release:
@@ -136,5 +128,4 @@ jobs:
 
       - name: Build Production Image
         run: |
-          # Build the image; build-image.sh will automatically resolve the tag to: <version>
-          bash scripts/build-image.sh
+          bash scripts/build-image.sh --release

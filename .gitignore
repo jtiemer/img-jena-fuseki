@@ -16,7 +16,6 @@ Desktop.ini
 
 # Build / Local
 .local/
-.terraform/
 target/
 build/
 dist/

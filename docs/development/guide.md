@@ -19,22 +19,19 @@ Guidelines for developing and contributing to this repository.
 | `scripts/hooks/` | Pre-push hooks: `reject-protected-branch-push.sh`, `enforce-version-bump.sh` |
 | `pipelines/` | Data backup (`backup.sh`) and restore (`restore.sh`) |
 | `tests/` | Smoke test (`smoke_test.sh`), integration test (`integration_test.sh`) |
-| `terraform/` | Azure Resource Group scaffold |
 | `docs/` | Architecture overview, development guide, operations guide, runbook |
 | `certs/` | Corporate CA certificates for TLS interception proxies |
 
 ## Build Image
 
 `scripts/build-image.sh` resolves the latest stable Fuseki version from Maven Central, detects the container engine
-(`podman` or `docker`, overridable via `ENGINE`), and tags the image based on branch:
+(`podman` or `docker`, overridable via `ENGINE`), and tags the image:
 
-| Branch | Tag Format |
-|---|---|
-| `main` | `<version>` |
-| `dev` | `<version>-dev` |
-| `feat/*`, `bugfix/*`, etc. | `<version>-<prefix>-<commit-sha>` |
-| Other | `<version>-custom` |
-
+| Build Mode | Tag Format | Example |
+|---|---|---|
+| Default (all branches) | `<version>-<commit-sha>` | `fuseki:0.1.10-c43f276` |
+| `--release` / `-r` flag | `<version>` | `fuseki:0.1.10` |
+| `FOR_TESTS=true` | `<version>-test` | `fuseki:0.1.10-test` |
 `FOR_TESTS=true` forces a `<version>-test` tag regardless of branch (used by `integration_test.sh`).
 
 Configuration: `.env.build` sets `FUSEKI_VERSION` and `JENA_CLI_TOOLS_VERSION`.
@@ -86,7 +83,6 @@ pre-commit install --hook-type pre-push
 | `shellcheck` | Shell script linting |
 | `shfmt` | Shell script formatting (`-i 2 -ci`) |
 | `hadolint` | Dockerfile linting |
-| `terraform_fmt` | Terraform/OpenTofu formatting |
 | `gitleaks` | Secret detection |
 | `commitizen` | Conventional Commits message validation (commit-msg stage) |
 | `local-trivy-config` | Trivy IaC config scan (when `trivy` is on PATH) |
@@ -107,7 +103,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 ### Pull requests to `dev`/`main` (and `workflow_dispatch`)
 
 1. Validate merge source branch (conventional prefix required for `dev`; `dev` or `fix/*` for `main`).
-2. Install Python, Commitizen, pre-commit, OpenTofu, Hadolint, Trivy.
+2. Install Python, Commitizen, pre-commit, Hadolint, Trivy.
 3. Restore pre-commit environment cache.
 4. Run pre-commit checks (`pre-commit run --all-files`).
 5. Run smoke tests.
@@ -117,21 +113,19 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 ### Push to `dev`
 
-- Tag release via `scripts/tag-release.sh` (if version was bumped).
-- Build dev image (`<version>-dev`).
+- Build dev image (`<version>-<commit-sha>`).
 
-### Push to `main`
+### Push to `main` or `release/*`
 
 - Tag release via `scripts/tag-release.sh`.
-- Build production image (`<version>`).
-
+- Build production release image (`<version>`) via `build-image.sh --release`.
 ### Dependency management
 
-Dependabot (`.github/dependabot.yml`) monitors GitHub Actions, Dockerfile base images, and Terraform providers weekly.
+Dependabot (`.github/dependabot.yml`) monitors GitHub Actions and Dockerfile base images weekly.
 
 ## Version Management
 
 - Version tracked in `.cz.toml` (`[tool.commitizen] version`).
-- Bump via `cz bump` (Commitizen). Pre-push hook enforces that the version was incremented.
-- `scripts/tag-release.sh` creates and pushes a `v<version>` git tag on `dev`/`main` push if the version increased
-  since the previous tag.
+- Release versions are bumped via `cz bump` (Commitizen).
+- Pre-push hook (`enforce-version-bump.sh`) requires version increments when pushing to `main` or `release/*`.
+- `scripts/tag-release.sh` creates and pushes a `v<version>` git tag exclusively on `main` or `release/*` branches.

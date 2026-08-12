@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
 # Enforces that the local .cz.toml version is strictly greater than the
-# target branch's current tip version.
+# target branch's current tip version when preparing a release.
 #
-# Two invocation modes:
-#   1. Manual:    scripts/hooks/enforce-version-bump.sh <dev|main>
-#   2. pre-push:  invoked with no args. Runs the check against "dev" for any
-#      branch other than dev/main itself (pushes made from dev/main are
-#      rejected outright by reject-protected-branch-push.sh). Bugfix branches
-#      destined for main must be checked manually:
-#      scripts/hooks/enforce-version-bump.sh main
+# Version increments are required only for pushes/merges to main or release/* branches.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -43,6 +37,6 @@ fi
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
 case "$branch" in
-dev | main) exit 0 ;; # rejected outright by reject-protected-branch-push.sh
-*) check_version "dev" ;;
+main | release/*) check_version "main" ;;
+*) exit 0 ;;
 esac

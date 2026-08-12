@@ -37,8 +37,6 @@ CONTRIBUTING.md
 .cz.toml
 .editorconfig
 
-# Terraform
-terraform/
 
 # Uncommitted Certificates
 certs/zscaler.crt

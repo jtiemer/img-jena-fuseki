@@ -18,11 +18,11 @@ agent, please refrain from opening pull requests and leave this to your manager.
     * `test/` for editing/expanding tests
     * `ci/` or `build/` for pipeline and container build adjustments
     * `dependabot/` for automated dependency updates
-* Generally branch from `dev` and open pull requests into `dev`
-* `bugfix/` branches may also target `main` directly (typically branched from `main` for a hotfix)
+* Branch from `dev` and open pull requests into `dev`. Production releases are promoted by merging `dev` into `main`.
+* `bugfix/` or `fix/` branches may also target `main` directly for critical production fixes.
 * **Direct pushes to `dev` and `main` are prohibited.** The only valid path onto these branches is a merged pull
   request: `feat/`, `bugfix/`, `chore/`, `refactor/`, `docs/`, `test/`, `ci/`, `build/`, `dependabot/` branches into `dev`; `dev` or
-  `bugfix/` branches into `main`. A local pre-push hook rejects pushes made while checked out on `dev`/`main` as a
+  `fix/`/`bugfix/` branches into `main`. A local pre-push hook rejects pushes made while checked out on `dev`/`main` as a
   best-effort reminder; it does not replace review discipline and can be bypassed with `--no-verify`.
 * **NB:** commitizen branch naming is enforced/encouraged locally by pre-commit.
 
@@ -103,8 +103,7 @@ runs all the tests on the whole repository.
 
 ## Pull Requests
 
-Make sure all tests pass before opening a pull request into `dev` or `main` (the latter being discouraged except for
-hotfixes/security issues), and the image builds without error:
+Make sure all tests pass before opening a pull request into `dev` or `main` (the latter being reserved for `dev` release promotions or critical fixes), and the image builds without error:
 
 1. Run the smoke test to verify repository scaffolding:
    ```bash

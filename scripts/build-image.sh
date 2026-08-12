@@ -13,7 +13,16 @@ if [ -f "$ROOT_DIR/.env.build" ]; then
 fi
 IMAGE_NAME="${IMAGE_NAME:-fuseki}"
 IMAGE_TAG="${IMAGE_TAG:-dev}"
+IS_RELEASE="${RELEASE_BUILD:-false}"
 
+for arg in "$@"; do
+  case "$arg" in
+  --release | -r)
+    IS_RELEASE="true"
+    ;;
+  *) ;;
+  esac
+done
 resolve_latest_fuseki_version() {
   local latest
   latest=$(curl -fsSL "https://repo1.maven.org/maven2/org/apache/jena/jena-fuseki-server/maven-metadata.xml" \
@@ -57,11 +66,6 @@ fi
 FOR_TESTS="${FOR_TESTS:-false}"
 
 if [[ "$IMAGE_TAG" == "dev" ]]; then
-  BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || echo "detached")
-  if [[ "$BRANCH" == "detached" ]]; then
-    # Fallback to standard CI environment variables in detached HEAD state
-    BRANCH="${GITHUB_REF_NAME:-${CI_COMMIT_REF_NAME:-$BRANCH}}"
-  fi
   COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
   VERSION=""
   if command -v cz >/dev/null 2>&1; then
@@ -76,31 +80,11 @@ if [[ "$IMAGE_TAG" == "dev" ]]; then
   fi
 
   if [[ "$FOR_TESTS" == "true" ]]; then
-    # Built specifically to be exercised by tests/*.sh; branch/tag state is irrelevant.
     IMAGE_TAG="${VERSION}-test"
+  elif [[ "$IS_RELEASE" == "true" ]]; then
+    IMAGE_TAG="${VERSION}"
   else
-    # Base version: the exact tag on HEAD if one exists (a just-released commit),
-    # otherwise the in-progress version from .cz.toml.
-    EXACT_TAG=$(git describe --tags --exact-match --match 'v*' HEAD 2>/dev/null || true)
-    BASE_VERSION="${EXACT_TAG#v}"
-    [[ -z "$BASE_VERSION" ]] && BASE_VERSION="$VERSION"
-
-    case "$BRANCH" in
-    main)
-      IMAGE_TAG="$BASE_VERSION"
-      ;;
-    dev)
-      IMAGE_TAG="${BASE_VERSION}-dev"
-      ;;
-    feat/* | bugfix/* | chore/* | refactor/* | docs/* | style/* | perf/* | test/* | ci/* | build/* | dependabot/*)
-      # Extract the commitizen prefix (e.g. chore, feat, bugfix, dependabot) from the branch name
-      PREFIX="${BRANCH%%/*}"
-      IMAGE_TAG="${BASE_VERSION}-${PREFIX}-${COMMIT_SHA}"
-      ;;
-    *)
-      IMAGE_TAG="${BASE_VERSION}-custom"
-      ;;
-    esac
+    IMAGE_TAG="${VERSION}-${COMMIT_SHA}"
   fi
 fi
 
