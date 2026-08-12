@@ -58,7 +58,7 @@ jobs:
           bash scripts/build-image.sh
 
       - name: Run Trivy Vulnerability Scanner
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: 'fuseki:${{ github.sha }}'
           format: 'table'
